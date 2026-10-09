@@ -1,0 +1,59 @@
+# Python & Machine Learning
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.tflite
+wandb/
+runs/
+*.log
+
+# Dataset & Raw Media
+*.ARW
+*.arw
+*.dng
+*.DNG
+*.raw
+*.CR2
+*.NEF
+datasets/
+data/
+Final Project/Resources/*.pdf
+!Final Project/Resources/
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints
+
+# Flutter & Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+*.apk
+*.aab
+
+# Android Native
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/**/build/
+mobile/android/app/build/
+*.keystore
+*.jks
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
