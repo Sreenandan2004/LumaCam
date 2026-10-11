@@ -13,9 +13,16 @@ on packed 4-channel Bayer tensors (H/2, W/2, 4) to preserve sensor-level high bi
 information and suppress photon shot noise before demosaicing.
 """
 
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 import numpy as np
 import torch
+
+# Upper bound for the amplified packed Bayer input, matching Chen et al. (SID):
+#     x' = min(Pack(I_raw) * alpha, 1.0)
+# Without this ceiling, bright pixels multiplied by alpha (100x-300x) reach values in the
+# hundreds, which the network never needs (the target is in [0, 1]) and which would blow up
+# the INT8 calibration range during quantization. The same ceiling must be applied on-device.
+AMPLIFIED_INPUT_CEILING: float = 1.0
 
 
 def pack_raw_bayer_np(
@@ -110,20 +117,25 @@ def pack_raw_bayer_torch(
 def apply_exposure_amplification(
     packed_raw: torch.Tensor,
     ratio: Union[float, torch.Tensor],
+    max_value: Optional[float] = AMPLIFIED_INPUT_CEILING,
 ) -> torch.Tensor:
     """
     Applies global exposure ratio amplification alpha to the packed raw input.
     As formulated in Equation (1) of the base paper:
-        x' = Pack(I_raw) * alpha
+        x' = min(Pack(I_raw) * alpha, max_value)
 
     Args:
         packed_raw: Tensor of shape (B, 4, H/2, W/2).
         ratio: Exposure ratio between input short exposure and target long exposure.
+               A float, or a tensor of shape (B,) / (B, 1) for per-sample ratios.
+        max_value: Saturation ceiling (default 1.0, as in SID). Pass None to disable.
 
     Returns:
-        Amplified tensor clamped to prevent extreme numerical overflow.
+        Amplified tensor of shape (B, 4, H/2, W/2), clamped to [0, max_value].
     """
-    if isinstance(ratio, torch.Tensor):
-        if ratio.ndim == 1:
-            ratio = ratio.view(-1, 1, 1, 1)
-    return packed_raw * ratio
+    if isinstance(ratio, torch.Tensor) and ratio.ndim in (1, 2):
+        ratio = ratio.reshape(-1, 1, 1, 1)  # (B,) or (B, 1) -> (B, 1, 1, 1)
+    amplified = packed_raw * ratio
+    if max_value is not None:
+        amplified = torch.clamp(amplified, max=max_value)
+    return amplified

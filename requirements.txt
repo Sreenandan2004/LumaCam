@@ -18,10 +18,14 @@ torchmetrics>=1.3.0
 # Edge Optimization & Conversion
 onnx>=1.15.0
 onnxruntime>=1.17.0
-# Note: For TFLite / LiteRT conversion on desktop, install tensorflow or ai-edge-litert
-ai-edge-litert>=1.0.0; platform_system != "Windows" or python_version < "3.13"
+# LiteRT (TFLite) conversion: ai-edge-litert publishes Linux/macOS wheels only, so it is skipped on
+# Windows. Windows users run the LiteRT/INT8 step on Kaggle/Colab or WSL.
+ai-edge-litert>=1.0.0; platform_system != "Windows"
 
 # Experiment Management & Utilities
 pyyaml>=6.0.1
 tqdm>=4.66.0
 matplotlib>=3.8.0
+
+# Testing
+pytest>=8.0.0
