@@ -126,3 +126,33 @@ Five stacked branches, each based on the previous one. Merge them into `dev` **i
   - `edge_opt/models/*.onnx` stays untracked (`.gitignore`; see OD-4 in `docs/api_specifications.md`).
   - The `TracerWarning` from `attention_gate.py:57` is benign (explained in the module docstring).
   - Whoever owns Task 7 (OD-3) can now start from `edge_opt/models/lumacam_fp32.onnx`.
+
+### Added — Post-inference color science (branch 4, Lakshmi)
+
+- **What / Why:** Task 13. `lakshmi.md` specified `I^(1/2.2)` gamma on the model output. But training targets
+  come from `rawpy.postprocess(use_camera_wb=True, no_auto_bright=True)`. The effective default gamma, verified
+  on rawpy 0.27.1, is `(1/2.222, 4.5)`: the BT.709 curve, in the sRGB color space. So the model already
+  outputs gamma-encoded, white-balanced sRGB, and a second gamma would double-encode it (mid-gray
+  0.50 → 0.73, washed out). `model/postprocess/color_science.py` therefore provides:
+  - `srgb_to_linear` / `linear_to_srgb`: IEC 61966-2-1 transfer functions. Gamma encoding happens only
+    for inputs declared linear.
+  - `gray_world_awb`: Gray-World white balance in **linear** light, where channel gains are physically
+    meaningful. Blend strength, gains capped to [1/max_gain, max_gain], clipped pixels excluded,
+    and a black-image guard.
+  - `adjust_saturation`: an exact closed form for HSV saturation scaling, `c' = V − k(V − c)`, with
+    `k ≤ V/(V − min)` per pixel. Hue and value are preserved and colors stay in gamut, without an HSV round trip.
+  - `apply_color_pipeline` (torch, any `(..., 3, H, W)`) and `apply_color_pipeline_np` (`(H, W, 3)`).
+    Defaults: AWB strength 0.5 (the model already learned camera white balance) and saturation ×1.15.
+    There is one implementation in PyTorch, and the NumPy path wraps it.
+- **Files:** `model/postprocess/__init__.py`, `model/postprocess/color_science.py`,
+  `tests/unit/test_color_science.py` (all new), `AGENTS.md` (§ 4 Workstream 3 gamma note, § 5 tree), `Progress.md`.
+- **Verification:** `python -m pytest tests/unit/test_color_science.py -v` → **16 passed**. The tests cover:
+  - sRGB round trip and known values;
+  - a gray image unchanged by AWB, and a color cast removed;
+  - gain cap, black-image safety, and saturation identity, value and hue preservation;
+  - neutral-settings identity, which proves there is no double gamma;
+  - input validation.
+- **Impact / Follow-ups:**
+  - AGENTS.md § 4 (Workstream 3) now says gamma encoding applies only to linear data. The generator's output must
+    not be gamma-corrected again.
+  - Veni/Nandan: the Android port of this pipeline (Kotlin or C++) should follow `docs/api_specifications.md` § 6.
