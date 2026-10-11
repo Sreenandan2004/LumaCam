@@ -4,6 +4,37 @@
 
 ---
 
+## 0. Master Rules (Mandatory for Every Change)
+
+These rules override every other section. They apply to all team members and all AI coding assistants.
+
+1. **Log every change in [`CHANGELOG.md`](CHANGELOG.md)**, in the same branch and commit as the change.
+   Add an entry under `[Unreleased]`. Each entry states:
+   - **What** changed and **Why**: the problem, with the evidence.
+   - **Files** touched.
+   - **Verification**: the exact command and its result.
+   - **Impact / Follow-ups**: behavior changes, retraining needs, and owners to notify.
+   A change without a log entry is incomplete and must not be merged.
+2. **Update the other affected documents in the same branch:**
+   - [`Progress.md`](Progress.md): milestone or task status changes.
+   - [`docs/api_specifications.md`](docs/api_specifications.md): any change to a cross-team contract (tensor names,
+     shapes, value ranges, α semantics, checkpoint format, ONNX/LiteRT I/O).
+   - Member handoff files (`me.md`, `veni.md`, `lakshmi.md`): when task scope or status changes.
+   - This file's Section 5 (Repository File Structure): when files or folders are added.
+3. **One logical change per branch.** Use branch sequences for dependent changes (Section 6.2).
+4. **Follow software engineering principles:**
+   - **Tests with every behavior change.** Add or extend tests in `tests/unit/` that fail before the fix and pass after it.
+     Run `python -m pytest tests/unit -v` before committing.
+   - **Fail fast and loudly.** Raise clear exceptions instead of silent defaults or fallbacks that hide bad data.
+   - **Single source of truth.** Shared constants (e.g. `AMPLIFIED_INPUT_CEILING`, `SID_SPLIT_PREFIXES`) are defined once and imported everywhere else.
+   - **Minimal, focused diffs.** No drive-by refactors. Preserve file formatting (notebooks: edit sources, keep JSON layout).
+   - **Backward compatibility.** Any break in behavior or format is called out in the change log under *Impact*.
+   - **Readable code.** Type hints (PEP 484), docstrings with tensor shapes, and comments that explain *why*.
+5. **Never change a cross-team contract on your own.** Record the proposal under
+   `Open Decisions` in `CHANGELOG.md` and in `docs/api_specifications.md`, and get the owner's sign-off first.
+
+---
+
 ## 1. Project Overview & Mission
 
 **LumaCam** is a real-time, edge-native low-light image enhancement mobile camera application inspired by the Google Pixel GCam interface. It bridges the critical efficiency-quality gap in low-light computational photography by combining:
@@ -94,7 +125,8 @@ To ensure clear ownership, avoid merge conflicts, and allow parallel progress ac
   - Develop Pixel GCam UI: minimalist viewfinder, bottom mode carousel, double-tap zoom, interactive exposure slider.
   - Build Android native plugin using Camera2 API with `ImageReader` / `SurfaceTexture`.
   - Connect user exposure slider to inference conditioning input in real time.
-  - Implement post-processing pipeline (auto white balance, contrast stretching, gamma correction).
+  - Implement post-processing pipeline (auto white balance, contrast stretching, gamma correction). The generator
+    already outputs gamma-encoded sRGB, so apply gamma encoding only to linear data (`model/postprocess/color_science.py`).
   - Handle full-resolution photo capture, storage permissions, and photo gallery preview.
 
 ---
@@ -104,6 +136,8 @@ To ensure clear ownership, avoid merge conflicts, and allow parallel progress ac
 ```text
 LumaCam/
 ├── AGENTS.md                               # Project specification & AI Agent guidance (this file)
+├── CHANGELOG.md                            # Mandatory change log (see Section 0, Master Rules)
+├── Progress.md                             # Milestone status & next steps
 ├── README.md                               # Public project documentation & demo media
 ├── .gitignore                              # Comprehensive git ignore (Python, Flutter, Android, Models)
 ├── docs/                                   # Architectural diagrams, papers, and phase reports
@@ -119,6 +153,7 @@ LumaCam/
 │   │   ├── conditioning.py                 # Latent vector injection layer (FiLM / Bottleneck)
 │   │   └── discriminator.py                # 70x70 PatchGAN Discriminator
 │   ├── losses/                             # L1, MS-SSIM, Perceptual, Adversarial loss functions
+│   ├── postprocess/                        # Post-inference color science (AWB, sRGB transfer, saturation)
 │   ├── train.py                            # Main training loop
 │   ├── evaluate.py                         # PSNR, SSIM, LPIPS benchmarking script
 │   └── export_onnx.py                      # ONNX exporter
@@ -159,8 +194,16 @@ LumaCam/
    - `feature/model-<task>`: Model engineering (Member 1).
    - `feature/opt-<task>`: Quantization & edge profiling (Member 2).
    - `feature/app-<task>`: Flutter UI and Camera2 implementation (Member 3).
+   - `feature/docs-<task>`: Documentation, specifications, and process changes (any member).
 
-2. **Git LFS Policy**:
+2. **Branch Sequences (stacked branches)**:
+   - Each branch carries exactly one logical change. When changes depend on each other, create them
+     as a sequence: the first branch starts from `dev`, each later branch starts from the previous one.
+   - Open one PR per branch, with base `dev`, and merge them in the documented order. After a merge, rebase
+     the next branch onto `dev` before merging it.
+   - Record the sequence and its merge order in the `CHANGELOG.md` entry of the first branch.
+
+3. **Git LFS Policy**:
    - Never commit raw datasets (`.ARW`, `.dng`, `.png`) or large model checkpoints (`.pth > 50MB`) to standard git.
    - Use `.gitignore` for data folders and track `.tflite` / `.onnx` models via Git LFS.
 
@@ -173,3 +216,4 @@ When assisting this project:
 2. **Prioritize Edge Efficiency**: Always check for memory leaks, buffer copies, and tensor allocation bottlenecks when writing native Android or LiteRT code.
 3. **Verify Tensor Shapes**: In all Attention U-Net and Bayer packing code, explicitly document and verify tensor dimensions at every downsampling/upsampling stage.
 4. **Adhere to Code Standards**: Use type annotations in Python (PEP 484), clean Dart formatting (`dart format`), and robust error handling in Android Kotlin.
+5. **Enforce the Master Rules (Section 0)**: Every change you make must be logged in `CHANGELOG.md`, must update the affected docs, and must ship with tests. Do this without being asked.
