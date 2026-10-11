@@ -43,6 +43,7 @@ The following core modules, training infrastructure, and tests have been impleme
 | [`model/configs/train_config.yaml`](model/configs/train_config.yaml) | Training Config | ✅ Complete | YAML configuration tuned for both local 4GB GTX 1650 development and cloud Kaggle P100 / Colab training. |
 | [`model/train.py`](model/train.py) | Training Orchestrator | ✅ Complete | Full alternating GAN training loop with validation PSNR & SSIM metrics, automated best-checkpoint saving (`checkpoints/lumacam_best.pt`), and `--dry-run` mode. |
 | [`demo_raw_camera.py`](demo_raw_camera.py) | Camera Demo & Simulator | ✅ Complete | Interactive raw camera demo simulating physical Bayer sensor capture, amplification, and enhancement with side-by-side visual output. |
+| [`notebooks/train_lumacam_kaggle.ipynb`](notebooks/train_lumacam_kaggle.ipynb) | Cloud Training | ✅ Complete | Full end-to-end training notebook for Kaggle P100 GPU with automatic SID dataset detection, PSNR curves, and visual plots. |
 
 ---
 
@@ -69,7 +70,7 @@ flowchart TD
         N2["✅ Task 2: SID Sony & Dummy Dataset (sid_dataset.py)"]
         N3["✅ Task 3: Comprehensive Unit Tests (test_model_forward.py)"]
         N4["✅ Task 4: Training Loop & Config (train.py)"]
-        N5["Task 5: Kaggle P100 Training Notebook (notebooks/train_lumacam_kaggle.ipynb)"]
+        N5["✅ Task 5: Kaggle P100 Training Notebook (notebooks/train_lumacam_kaggle.ipynb)"]
     end
 
     subgraph Lakshmi: Edge Optimization

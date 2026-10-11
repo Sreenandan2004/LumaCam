@@ -391,6 +391,6 @@ edge_opt/quantize_int8.py
 
 - [x] `python -m pytest tests/unit/test_model_forward.py -v` — all 10 tests pass (3.75s)
 - [x] `python model/train.py --config model/configs/train_config.yaml --dry-run --epochs 1 --batch-size 1` — completes without error (4.45s / epoch on GTX 1650)
-- [ ] Training loss decreases over first 100 iterations on GTX 1650
-- [ ] Kaggle notebook runs end-to-end on free P100
+- [x] Training loss decreases over first 100 iterations on GTX 1650
+- [x] Kaggle notebook runs end-to-end on free P100
 - [ ] INT8 PSNR drop < 0.5 dB vs FP32
