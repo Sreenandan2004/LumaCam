@@ -15,6 +15,7 @@ ENV/
 *.tflite
 wandb/
 runs/
+results/
 *.log
 
 # Dataset & Raw Media
