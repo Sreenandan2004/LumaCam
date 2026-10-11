@@ -94,17 +94,21 @@ def create_dataloaders(
             train_dataset = DummySIDDataset(num_samples=16, patch_size=patch_size, seed=42)
             val_dataset = DummySIDDataset(num_samples=4, patch_size=patch_size, seed=1337)
         else:
+            # split= keeps official SID scene IDs apart (0xxxx train, 2xxxx val) so validation
+            # PSNR is never measured on training scenes.
             train_dataset = SIDSonyDataset(
                 data_root=data_root,
                 list_file=train_list,
                 patch_size=patch_size,
                 is_train=True,
+                split="train",
             )
             val_dataset = SIDSonyDataset(
                 data_root=data_root,
                 list_file=val_list,
                 patch_size=patch_size,
                 is_train=False,
+                split="val",
             )
 
     train_loader = DataLoader(
