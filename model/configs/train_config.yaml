@@ -1,0 +1,40 @@
+# LumaCam Training Configuration
+# ==============================
+# Hyperparameters for training the Exposure-Conditioned Attention U-Net GAN.
+# Designed for dual execution: local GTX 1650 (4GB) with AMP and cloud Kaggle P100 / Colab.
+
+data:
+  data_root: "data/Sony"
+  train_list: "data/Sony_train_list.txt"
+  val_list: "data/Sony_val_list.txt"
+  patch_size: 512
+  num_workers: 0          # 0 for safe multiprocessing on Windows
+
+model:
+  in_channels: 4           # Packed RGGB raw (H/2, W/2, 4)
+  out_channels: 3          # Full-resolution sRGB (H, W, 3)
+  base_channels: 32        # Edge-optimized channel width
+  cond_dim: 1              # Scalar exposure conditioning vector (alpha)
+  use_pixel_shuffle: true  # Sub-pixel convolution reconstruction head
+
+training:
+  epochs: 200
+  batch_size: 2            # Default 2 fits in 4GB GTX 1650 VRAM; use 4-8 on Kaggle P100
+  lr_generator: 1.0e-4
+  lr_discriminator: 1.0e-4
+  beta1: 0.5               # Standard Adam beta1 for GAN stabilization
+  beta2: 0.999
+  lambda_l1: 100.0         # Pixel reconstruction loss weight
+  lambda_ms_ssim: 10.0     # Multi-scale structural similarity loss weight
+  lambda_adv: 1.0          # Adversarial PatchGAN loss weight
+  use_amp: false           # False for local GTX 1650 (Turing TU117 has no Tensor Cores); set True on Kaggle P100/T4
+  d_steps_per_g_step: 1    # Alternating D/G update ratio
+
+checkpointing:
+  save_dir: "checkpoints/"
+  save_every_n_epochs: 10
+  save_best: true
+
+logging:
+  log_every_n_steps: 10
+  val_every_n_epochs: 1
