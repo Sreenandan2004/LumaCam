@@ -16,9 +16,20 @@ Background (Computational Photography):
    ground truth is captured with long exposure (e.g., 10s or 30s). The physical amplification ratio:
        alpha = exposure_time_long / exposure_time_short (often 100x to 300x)
    LumaCam feeds alpha both as an analytical input multiplier and as a conditioning vector to FiLM.
+   The amplified input is clipped to 1.0 exactly as in Chen et al. (see AMPLIFIED_INPUT_CEILING).
+3. Official Train / Val / Test Split:
+   SID encodes the split in the first digit of the scene ID: '0xxxx' = train, '1xxxx' = test,
+   '2xxxx' = validation. Mixing them leaks test scenes into training and inflates reported PSNR,
+   so pass `split=` whenever the dataset is built by directory scanning.
+
+Directory Layout (`data_root` always points at the `Sony/` folder):
+    <data_root>/short/00001_00_0.1s.ARW
+    <data_root>/long/00001_00_10s.ARW
+Official list files (e.g. Sony_train_list.txt) contain lines of the form
+    ./Sony/short/00001_00_0.1s.ARW ./Sony/long/00001_00_10s.ARW ISO200 F8
+and are resolved against the same `data_root`.
 """
 
-import os
 import re
 from pathlib import Path
 from typing import Tuple, List, Optional, Union
@@ -26,20 +37,37 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from .raw_processing import pack_raw_bayer_np
+from .raw_processing import AMPLIFIED_INPUT_CEILING, pack_raw_bayer_np
+
+# First digit of the SID scene ID -> official split name (Chen et al., 2018).
+SID_SPLIT_PREFIXES = {"train": "0", "test": "1", "val": "2"}
 
 
 def _parse_exposure_time(filename: str) -> float:
     """
     Extracts exposure time in seconds from Sony SID filenames.
     Example: '00001_00_0.1s.ARW' -> 0.1, '10003_00_10s.ARW' -> 10.0
+
+    Raises:
+        ValueError: If the filename does not end with an '<number>s' exposure tag. Failing loudly
+            here is deliberate: a silent default would produce a wrong amplification ratio.
     """
     stem = Path(filename).stem
     match = re.search(r"(\d+(?:\.\d+)?)s$", stem)
-    if match:
-        return float(match.group(1))
-    # Fallback to default
-    return 1.0
+    if match is None:
+        raise ValueError(f"Cannot parse exposure time from SID filename: '{filename}'")
+    return float(match.group(1))
+
+
+def _resolve_list_path(data_root: Path, list_entry: str) -> Path:
+    """
+    Maps a list-file entry like './Sony/short/00001_00_0.1s.ARW' to '<data_root>/short/00001_00_0.1s.ARW'.
+
+    Only the last two path components (exposure folder + filename) are kept, so the result does not
+    depend on how the list file prefixes paths ('./Sony/...', 'Sony/...', or none).
+    """
+    entry = Path(list_entry)
+    return data_root / entry.parent.name / entry.name
 
 
 class SIDSonyDataset(Dataset):
@@ -61,16 +89,24 @@ class SIDSonyDataset(Dataset):
         black_level: float = 512.0,
         white_level: float = 16383.0,
         max_samples: Optional[int] = None,
+        split: Optional[str] = None,
     ):
         """
         Args:
-            data_root: Root directory containing 'Sony/short/' and 'Sony/long/'.
-            list_file: Path to text file listing short and long file paths.
+            data_root: The SID 'Sony/' directory, containing 'short/' and 'long/'.
+            list_file: Optional official pair list (e.g. Sony_train_list.txt). If omitted, pairs are
+                discovered by scanning 'short/' and 'long/'.
             patch_size: Height/width of cropped training patch (must be divisible by 2).
             is_train: If True, performs random crops and augmentations; otherwise center crop.
             black_level: Sony Alpha 7S II black pedestal (512).
             white_level: Sony Alpha 7S II 14-bit ceiling (16383).
             max_samples: Optional limit on dataset size for fast validation/debugging.
+            split: Optional official SID split ('train', 'val' or 'test'). Keeps only scenes whose
+                ID starts with that split's digit. Required for leak-free directory scanning.
+
+        Raises:
+            FileNotFoundError: If `list_file` is given but does not exist.
+            ValueError: If `split` is unknown, or no image pairs are found.
         """
         super().__init__()
         self.data_root = Path(data_root)
@@ -81,41 +117,66 @@ class SIDSonyDataset(Dataset):
 
         if patch_size % 2 != 0:
             raise ValueError(f"patch_size must be even to preserve Bayer 2x2 phase, got {patch_size}")
+        if split is not None and split not in SID_SPLIT_PREFIXES:
+            raise ValueError(f"split must be one of {sorted(SID_SPLIT_PREFIXES)}, got '{split}'")
 
         self.file_pairs = self._load_file_pairs(list_file)
+        if split is not None:
+            prefix = SID_SPLIT_PREFIXES[split]
+            self.file_pairs = [pair for pair in self.file_pairs if pair[0].name.startswith(prefix)]
         if max_samples is not None:
             self.file_pairs = self.file_pairs[:max_samples]
+        if not self.file_pairs:
+            raise ValueError(
+                f"No SID image pairs found (data_root='{self.data_root}', list_file='{list_file}', "
+                f"split='{split}'). data_root must point at the 'Sony/' folder."
+            )
 
     def _load_file_pairs(
         self, list_file: Optional[Union[str, Path]]
     ) -> List[Tuple[Path, Path, float, float]]:
         """Parses image pairs and exposure metadata."""
+        if list_file is not None:
+            return self._load_pairs_from_list(Path(list_file))
+        return self._scan_pairs_from_directories()
+
+    def _load_pairs_from_list(self, list_file: Path) -> List[Tuple[Path, Path, float, float]]:
+        """
+        Reads an official SID list file. Columns 3+ ('ISO200', 'F8') are camera metadata, not
+        exposure times, so exposure is always parsed from the filenames.
+        """
+        if not list_file.is_file():
+            raise FileNotFoundError(f"SID list file not found: '{list_file}'")
+
         pairs = []
-        if list_file and Path(list_file).exists():
-            with open(list_file, "r") as f:
-                for line in f:
-                    parts = line.strip().split()
-                    if len(parts) >= 2:
-                        short_p = self.data_root / parts[0].lstrip("./")
-                        long_p = self.data_root / parts[1].lstrip("./")
-                        short_exp = float(parts[2]) if len(parts) >= 3 else _parse_exposure_time(parts[0])
-                        long_exp = float(parts[3]) if len(parts) >= 4 else _parse_exposure_time(parts[1])
-                        pairs.append((short_p, long_p, short_exp, long_exp))
-        else:
-            # Automatic directory scanning fallback
-            short_dir = self.data_root / "short"
-            long_dir = self.data_root / "long"
-            if short_dir.is_dir() and long_dir.is_dir():
-                short_files = sorted(list(short_dir.glob("*.ARW")) + list(short_dir.glob("*.arw")))
-                for s_path in short_files:
-                    # Sony SID format: ID_scene_exposure.ARW e.g., 00001_00_0.1s.ARW
-                    prefix = "_".join(s_path.stem.split("_")[:2])
-                    long_matches = list(long_dir.glob(f"{prefix}_*s.ARW")) + list(long_dir.glob(f"{prefix}_*s.arw"))
-                    if long_matches:
-                        l_path = long_matches[0]
-                        s_exp = _parse_exposure_time(s_path.name)
-                        l_exp = _parse_exposure_time(l_path.name)
-                        pairs.append((s_path, l_path, s_exp, l_exp))
+        with open(list_file, "r") as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) < 2:
+                    continue  # Blank or malformed line
+                short_p = _resolve_list_path(self.data_root, parts[0])
+                long_p = _resolve_list_path(self.data_root, parts[1])
+                pairs.append(
+                    (short_p, long_p, _parse_exposure_time(short_p.name), _parse_exposure_time(long_p.name))
+                )
+        return pairs
+
+    def _scan_pairs_from_directories(self) -> List[Tuple[Path, Path, float, float]]:
+        """Pairs every '<data_root>/short/*.ARW' with the long exposure of the same scene."""
+        pairs = []
+        short_dir = self.data_root / "short"
+        long_dir = self.data_root / "long"
+        if short_dir.is_dir() and long_dir.is_dir():
+            short_files = sorted(list(short_dir.glob("*.ARW")) + list(short_dir.glob("*.arw")))
+            for s_path in short_files:
+                # Sony SID format: ID_scene_exposure.ARW e.g., 00001_00_0.1s.ARW
+                prefix = "_".join(s_path.stem.split("_")[:2])
+                long_matches = list(long_dir.glob(f"{prefix}_*s.ARW")) + list(long_dir.glob(f"{prefix}_*s.arw"))
+                if long_matches:
+                    l_path = long_matches[0]
+                    s_exp = _parse_exposure_time(s_path.name)
+                    l_exp = _parse_exposure_time(l_path.name)
+                    pairs.append((s_path, l_path, s_exp, l_exp))
         return pairs
 
     def __len__(self) -> int:
@@ -170,8 +231,8 @@ class SIDSonyDataset(Dataset):
             bayer_pattern="RGGB",
         )
 
-        # Apply analytical exposure ratio amplification
-        amplified_bayer = packed_bayer * ratio
+        # Apply analytical exposure ratio amplification, saturating at 1.0 as in SID
+        amplified_bayer = np.minimum(packed_bayer * ratio, AMPLIFIED_INPUT_CEILING)
 
         # 5. Data Augmentations (Performed consistently across Bayer & RGB)
         if self.is_train:
@@ -256,7 +317,7 @@ class DummySIDDataset(Dataset):
         noisy_dark = np.clip(bayer_dark + shot_noise + read_noise, 0.0, 1.0)
 
         # Scale by amplification ratio (matches SID preprocessing pipeline)
-        amplified_input = np.clip(noisy_dark * ratio, 0.0, 10.0).astype(np.float32)
+        amplified_input = np.clip(noisy_dark * ratio, 0.0, AMPLIFIED_INPUT_CEILING).astype(np.float32)
 
         input_tensor = torch.from_numpy(amplified_input).float()
         target_tensor = torch.from_numpy(clean_rgb).float()

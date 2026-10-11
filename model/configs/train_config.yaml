@@ -4,9 +4,11 @@
 # Designed for dual execution: local GTX 1650 (4GB) with AMP and cloud Kaggle P100 / Colab.
 
 data:
-  data_root: "data/Sony"
-  train_list: "data/Sony_train_list.txt"
-  val_list: "data/Sony_val_list.txt"
+  data_root: "data/Sony"   # The SID 'Sony/' folder that contains 'short/' and 'long/'
+  # Optional official pair lists (e.g. "data/Sony_train_list.txt"). When null, pairs are found
+  # by scanning data_root and filtered by scene ID (0xxxx train / 2xxxx val / 1xxxx test).
+  train_list: null
+  val_list: null
   patch_size: 512
   num_workers: 0          # 0 for safe multiprocessing on Windows
 
