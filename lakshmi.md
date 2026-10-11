@@ -18,6 +18,19 @@
 3. Build the **Color Science Post-Processing Module** (`model/postprocess/color_science.py`).
 4. Maintain **Documentation** (`Progress.md` and Phase deliverables).
 
+> [!IMPORTANT]
+> **Status as of 2026-10-12** (details in [`CHANGELOG.md`](CHANGELOG.md)):
+> 1. ✅ **Task 2:** implemented by Nandan, then corrected by Lakshmi:
+>    - list parsing, `data_root`, official split and input clipping fixed;
+>    - the loader returns a `(input, target, alpha)` **tuple**, not the dict sketched below.
+> 2. ✅ **Task 6:** `model/export_onnx.py` is done (parity 8.9e-08 vs PyTorch).
+> 3. ✅ **Task 13:** `model/postprocess/color_science.py` is done.
+>    The spec's extra `I^(1/2.2)` gamma below is **superseded**: the model already outputs gamma-encoded sRGB.
+> 4. 🔄 **Docs:** [`docs/api_specifications.md`](docs/api_specifications.md) added. `base_paper_notes.md` and
+>    `phase1_deliverables.md` are still to do.
+>
+> The sections below are kept as the original spec. Where they differ, the code and `docs/` win.
+
 ### Repository Setup
 ```bash
 # Clone and switch to your branch
@@ -238,6 +251,6 @@ git push origin feature/dataset-sid
 
 ## Verification Checklist
 
-- [ ] `from model.datasets.sid_dataset import DummySIDDataset; d = DummySIDDataset(); print(d[0]['input'].shape)` prints `(4, 256, 256)`.
-- [ ] `python model/export_onnx.py --test` passes ONNX validity checks and numerical parity.
-- [ ] `model/postprocess/color_science.py` runs on a sample image and enhances colors without clipping artifacts.
+- [x] `from model.datasets.sid_dataset import DummySIDDataset; d = DummySIDDataset(); print(d[0][0].shape)` prints `torch.Size([4, 256, 256])` (the loader returns a tuple).
+- [x] `python model/export_onnx.py --random-init --test` (or `--checkpoint checkpoints/lumacam_best.pt --test`) passes ONNX validity checks and numerical parity.
+- [x] `model/postprocess/color_science.py` enhances colors without clipping or double-gamma artifacts (`python -m pytest tests/unit/test_color_science.py`).

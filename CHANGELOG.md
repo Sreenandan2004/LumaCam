@@ -156,3 +156,50 @@ Five stacked branches, each based on the previous one. Merge them into `dev` **i
   - AGENTS.md § 4 (Workstream 3) now says gamma encoding applies only to linear data. The generator's output must
     not be gamma-corrected again.
   - Veni/Nandan: the Android port of this pipeline (Kotlin or C++) should follow `docs/api_specifications.md` § 6.
+
+### Docs — API contract, open decisions, and stale planning docs (branch 5, Lakshmi)
+
+- **What / Why:** The tensor contract between dataset, model, ONNX artifact and Android app existed only
+  implicitly in code, and several planning docs were stale or wrong.
+  - **`docs/api_specifications.md` (new):** the single source of truth for:
+    - `input_bayer` (shape, `[R, G1, B, G2]` channel order, normalization, 1.0 ceiling, multiple-of-16 rule,
+      even-offset crops, reading sensor constants from Camera2 instead of hard-coding Sony's);
+    - `alpha_exposure` and `enhanced_rgb` (gamma-encoded sRGB, camera WB baked in);
+    - the checkpoint format, the ONNX artifact, and the post-processing defaults.
+  - **Open Decisions** (in the spec, § 7), recorded instead of changed in code (Master Rule 5):
+    - **OD-1:** the app's α mapping (0.5–3.0) vs the trained α (100–300).
+    - **OD-2:** α is applied twice (input amplification + FiLM).
+    - **OD-3:** who owns INT8 (Task 7) and benchmarks (Task 8). `TEAM_PLAN.md`/`me.md` and `Progress.md` disagree.
+    - **OD-4:** `.onnx`/`.tflite` are gitignored, but AGENTS.md says to track them with Git LFS.
+    - **OD-5:** 8-bit vs 16-bit ground truth.
+  - **`TEAM_PLAN.md`:** the handoff links pointed to `file:///C:/Users/imsre/.gemini/...` on another machine.
+    They are now relative links, plus pointers to the change log and the API spec.
+  - **`lakshmi.md`:**
+    - status banner: Task 2 was done by Nandan and fixed here, the loader returns a tuple not a dict,
+      Tasks 6 and 13 are done, and the spec's extra gamma is superseded;
+    - checklist corrected (`d[0][0]`, not `d[0]['input']`) and ticked.
+  - **`veni.md`:** OD-1 warning on the EV→α mapping, so the slider is not wired to an out-of-distribution α.
+  - **`Progress.md`:**
+    - header (date, active branch);
+    - task graph (Tasks 6 and 13 done; Tasks 7 and 8 owner TBD);
+    - next steps (merge order, retrain, open decisions);
+    - test count 46/46.
+- **Files:** `docs/api_specifications.md` (new), `TEAM_PLAN.md`, `lakshmi.md`, `veni.md`, `Progress.md`, `CHANGELOG.md`.
+- **Verification:**
+  - Documentation only.
+  - The facts it cites were checked: `python -m pytest tests/unit -q` → **46 passed**.
+  - `DummySIDDataset()[0][0].shape` → `torch.Size([4, 256, 256])`.
+  - rawpy 0.27.1 default gamma is `(0.45, 4.5)`.
+  - `torch.onnx.export` defaults to `dynamo=True` on torch 2.14.1.
+- **Impact / Follow-ups:** Nandan and Veni to decide OD-1 to OD-5. Until OD-1 is settled, the app must not
+  map the EV slider to α.
+
+### Open Decisions (summary — details in `docs/api_specifications.md` § 7)
+
+| ID | Question | Owners | Status |
+|---|---|---|---|
+| OD-1 | α units/range from the app vs trained range 100–300 | Nandan, Veni | Open, blocks slider→α wiring |
+| OD-2 | α applied to both the input and FiLM | Nandan | Open |
+| OD-3 | Owner of INT8 (Task 7) and edge benchmarks (Task 8) | Nandan | Open |
+| OD-4 | Git LFS for `.onnx`/`.tflite` vs `.gitignore` | Nandan | Open |
+| OD-5 | 8-bit vs 16-bit ground truth | Nandan | Open (next retrain) |
