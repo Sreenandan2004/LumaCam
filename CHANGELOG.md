@@ -200,6 +200,20 @@ Five stacked branches, each based on the previous one. Merge them into `dev` **i
 |---|---|---|---|
 | OD-1 | α units/range from the app vs trained range 100–300 | Nandan, Veni | Open, blocks slider→α wiring |
 | OD-2 | α applied to both the input and FiLM | Nandan | Open |
-| OD-3 | Owner of INT8 (Task 7) and edge benchmarks (Task 8) | Nandan | Open |
+| OD-3 | Owner of INT8 (Task 7) and edge benchmarks (Task 8) | Nandan | ✅ Resolved: Lakshmi (`report.md` § 5) |
 | OD-4 | Git LFS for `.onnx`/`.tflite` vs `.gitignore` | Nandan | Open |
 | OD-5 | 8-bit vs 16-bit ground truth | Nandan | Open (next retrain) |
+| OD-6 | ONNX input name `alpha_exposure` vs `alpha_cond`; fixed vs dynamic shapes in `report.md` | Nandan, Lakshmi | Open |
+
+### Docs — OD-3 resolved, OD-6 added after rebasing onto `report.md` (branch 5, Lakshmi)
+
+- **What / Why:** Nandan pushed `history.md` and `report.md` to `dev` (`cb97788`..`05e5a48`). `report.md` § 5 makes
+  Lakshmi the *Edge Optimization & LiteRT Runtime Lead*. That resolves **OD-3**: INT8 PTQ, the calibration set,
+  the LiteRT Android delegates and Pixel 7 profiling are hers, and color science moves to Veni. The report also
+  names the second ONNX input `alpha_cond` and calls the spatial dimensions dynamic. Both conflict with the
+  exporter (`alpha_exposure`, fixed shape by default), so this is recorded as the new **OD-6** instead of changing
+  code or Nandan's report.
+- **Files:** `docs/api_specifications.md` (§ 7), `CHANGELOG.md`.
+- **Verification:** Documentation only. All 5 branches were rebased onto `origin/dev` `05e5a48` (one `Progress.md`
+  conflict, resolved by keeping both sides' rows). `python -m pytest tests/unit -q` → 46 passed at the stack tip.
+- **Impact / Follow-ups:** Nandan and Lakshmi to settle OD-6 before the Android LiteRT wrapper is written.
