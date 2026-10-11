@@ -44,6 +44,8 @@ The following core modules, training infrastructure, and tests have been impleme
 | [`model/train.py`](model/train.py) | Training Orchestrator | ✅ Complete | Full alternating GAN training loop with validation PSNR & SSIM metrics, automated best-checkpoint saving (`checkpoints/lumacam_best.pt`), and `--dry-run` mode. |
 | [`demo_raw_camera.py`](demo_raw_camera.py) | Camera Demo & Simulator | ✅ Complete | Interactive raw camera demo simulating physical Bayer sensor capture, amplification, and enhancement with side-by-side visual output. |
 | [`notebooks/train_lumacam_kaggle.ipynb`](notebooks/train_lumacam_kaggle.ipynb) | Cloud Training | ✅ Complete | Full end-to-end training notebook for Kaggle P100 GPU with automatic SID dataset detection, PSNR curves, and visual plots. |
+| [`history.md`](history.md) | Sprint Execution Log | ✅ Complete | Chronological day-by-day executed plan (Oct 5 – Oct 19) tracking daily milestones, blockers, and Git commits. |
+| [`report.md`](report.md) | Technical Capstone Report | ✅ Complete | Academic project report with full LaTeX mathematical formulations, architecture diagrams, and team breakdown. |
 
 ---
 
