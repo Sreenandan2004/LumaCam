@@ -35,13 +35,23 @@ class AttentionGate(nn.Module):
         self.w_x = nn.Conv2d(in_channels_x, inter_channels, kernel_size=1, stride=1, padding=0, bias=True)
         self.w_g = nn.Conv2d(in_channels_g, inter_channels, kernel_size=1, stride=1, padding=0, bias=True)
 
+        # Normalization to prevent activation explosion or negative drift in deep layers
+        num_groups = min(8, inter_channels)
+        while inter_channels % num_groups != 0 and num_groups > 1:
+            num_groups -= 1
+        self.norm = nn.GroupNorm(num_groups, inter_channels)
+        self.relu = nn.ReLU(inplace=True)
+
         # Attention weight mapping psi: inter_channels -> 1 channel
+        psi_conv = nn.Conv2d(inter_channels, 1, kernel_size=1, stride=1, padding=0, bias=True)
+        # Initialize bias to +1.0 so initial attention is ~0.73-0.85 (starts open, preventing dead gates)
+        nn.init.constant_(psi_conv.bias, 1.0)
+        nn.init.kaiming_normal_(psi_conv.weight, mode="fan_in")
+
         self.psi = nn.Sequential(
-            nn.Conv2d(inter_channels, 1, kernel_size=1, stride=1, padding=0, bias=True),
+            psi_conv,
             nn.Sigmoid(),
         )
-
-        self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x: torch.Tensor, g: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -57,10 +67,10 @@ class AttentionGate(nn.Module):
         if g.shape[2:] != x.shape[2:]:
             g = F.interpolate(g, size=x.shape[2:], mode="bilinear", align_corners=False)
 
-        # Compute joint alignment score
+        # Compute joint alignment score with GroupNorm
         theta_x = self.w_x(x)
         phi_g = self.w_g(g)
-        f = self.relu(theta_x + phi_g)
+        f = self.relu(self.norm(theta_x + phi_g))
 
         # Compute soft attention coefficient map alpha in [0, 1]
         alpha = self.psi(f)
@@ -68,3 +78,4 @@ class AttentionGate(nn.Module):
         # Modulate encoder features
         gated_x = x * alpha
         return gated_x, alpha
+

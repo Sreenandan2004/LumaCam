@@ -210,19 +210,26 @@ def train_lumacam():
     ).to(device)
     adv_loss = AdversarialLoss().to(device)
 
-    # Optimizers
+    # Optimizers & Schedulers
     lr_g = float(train_cfg.get("lr_generator", 1e-4))
     lr_d = float(train_cfg.get("lr_discriminator", 1e-4))
     beta1 = float(train_cfg.get("beta1", 0.5))
     beta2 = float(train_cfg.get("beta2", 0.999))
+    warmup_epochs = int(train_cfg.get("warmup_epochs", 5))
+    clip_grad_norm = float(train_cfg.get("clip_grad_norm", 5.0))
+    lr_min = float(train_cfg.get("lr_min", 1e-6))
+    total_epochs = train_cfg.get("epochs", 200)
 
     optimizer_g = torch.optim.Adam(generator.parameters(), lr=lr_g, betas=(beta1, beta2))
     optimizer_d = torch.optim.Adam(discriminator.parameters(), lr=lr_d, betas=(beta1, beta2))
 
-    # Automatic Mixed Precision (AMP)
+    scheduler_g = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_g, T_max=total_epochs, eta_min=lr_min)
+    scheduler_d = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer_d, T_max=total_epochs, eta_min=lr_min)
+
+    # Automatic Mixed Precision (AMP) with stable initial scale
     use_amp = bool(train_cfg.get("use_amp", True)) and (device.type == "cuda")
-    scaler_g = torch.amp.GradScaler("cuda", enabled=use_amp)
-    scaler_d = torch.amp.GradScaler("cuda", enabled=use_amp)
+    scaler_g = torch.amp.GradScaler("cuda", init_scale=1024.0, enabled=use_amp)
+    scaler_d = torch.amp.GradScaler("cuda", init_scale=1024.0, enabled=use_amp)
 
     # DataLoaders
     train_loader, val_loader = create_dataloaders(config, dry_run=args.dry_run)
@@ -235,7 +242,6 @@ def train_lumacam():
 
     best_psnr = -1.0
     start_epoch = 1
-    total_epochs = train_cfg.get("epochs", 200)
 
     # Resume if requested
     if args.resume and Path(args.resume).exists():
@@ -252,12 +258,14 @@ def train_lumacam():
     log_every = log_cfg.get("log_every_n_steps", 10)
     val_every = log_cfg.get("val_every_n_epochs", 1)
 
-    print(f"\n[LumaCam] Starting training: {total_epochs} epochs, {len(train_loader)} batches/epoch...\n")
+    print(f"\n[LumaCam] Starting training: {total_epochs} epochs, {len(train_loader)} batches/epoch...")
+    print(f"[LumaCam] Generator Warmup: {warmup_epochs} epochs (pure L1 + MS-SSIM reconstruction)...\n")
 
     for epoch in range(start_epoch, total_epochs + 1):
         epoch_start = time.time()
         generator.train()
         discriminator.train()
+        in_warmup = (epoch <= warmup_epochs)
 
         running_d_loss = 0.0
         running_g_loss = 0.0
@@ -270,23 +278,24 @@ def train_lumacam():
             alpha = alpha.to(device)
 
             # -------------------------------------------------------------
-            # Step 1: Update Discriminator (PatchGAN)
+            # Step 1: Update Discriminator (PatchGAN) — active only after warmup
             # -------------------------------------------------------------
-            optimizer_d.zero_grad()
-            with torch.amp.autocast("cuda", enabled=use_amp):
-                # Real pair classification
-                real_pred = discriminator(bayer_in, gt_rgb)
+            d_loss_val = 0.0
+            if not in_warmup:
+                optimizer_d.zero_grad()
+                with torch.amp.autocast("cuda", enabled=use_amp):
+                    real_pred = discriminator(bayer_in, gt_rgb)
+                    with torch.no_grad():
+                        fake_rgb, _ = generator(bayer_in, alpha)
+                    fake_pred = discriminator(bayer_in, fake_rgb.detach())
 
-                # Fake pair classification (detach fake image to avoid backprop into G)
-                with torch.no_grad():
-                    fake_rgb, _ = generator(bayer_in, alpha)
-
-                fake_pred = discriminator(bayer_in, fake_rgb.detach())
-                d_loss = adv_loss.discriminator_loss(real_pred, fake_pred)
-
-            scaler_d.scale(d_loss).backward()
-            scaler_d.step(optimizer_d)
-            scaler_d.update()
+                d_loss = adv_loss.discriminator_loss(real_pred.float(), fake_pred.float())
+                scaler_d.scale(d_loss).backward()
+                scaler_d.unscale_(optimizer_d)
+                torch.nn.utils.clip_grad_norm_(discriminator.parameters(), max_norm=clip_grad_norm)
+                scaler_d.step(optimizer_d)
+                scaler_d.update()
+                d_loss_val = d_loss.item()
 
             # -------------------------------------------------------------
             # Step 2: Update Generator (Exposure Attention U-Net)
@@ -294,33 +303,44 @@ def train_lumacam():
             optimizer_g.zero_grad()
             with torch.amp.autocast("cuda", enabled=use_amp):
                 gen_rgb, _ = generator(bayer_in, alpha)
-                # Discriminator judgment on freshly generated fake
-                disc_fake_pred = discriminator(bayer_in, gen_rgb)
+                disc_fake_pred = discriminator(bayer_in, gen_rgb) if not in_warmup else None
 
-                # Composite loss: L1 + MS-SSIM + GAN
-                g_losses = composite_loss(gen_rgb, gt_rgb, disc_fake_pred)
-                g_loss = g_losses["total"]
+            # Calculate composite loss in float32 to prevent float16 overflow to Inf
+            g_losses = composite_loss(
+                gen_rgb.float(),
+                gt_rgb.float(),
+                disc_fake_pred.float() if disc_fake_pred is not None else None,
+                use_adv=(not in_warmup),
+            )
+            g_loss = g_losses["total"]
 
             scaler_g.scale(g_loss).backward()
+            scaler_g.unscale_(optimizer_g)
+            torch.nn.utils.clip_grad_norm_(generator.parameters(), max_norm=clip_grad_norm)
             scaler_g.step(optimizer_g)
             scaler_g.update()
 
-            running_d_loss += d_loss.item()
+            running_d_loss += d_loss_val
             running_g_loss += g_loss.item()
             running_l1 += g_losses["l1"].item()
             running_ms += g_losses["ms_ssim"].item()
 
             if step % log_every == 0 or step == len(train_loader):
+                phase_tag = "[WARMUP]" if in_warmup else "[GAN]"
                 print(
-                    f"Epoch [{epoch:03d}/{total_epochs:03d}] | Step [{step:03d}/{len(train_loader):03d}] | "
-                    f"D_Loss: {d_loss.item():.4f} | G_Total: {g_loss.item():.4f} | "
+                    f"Epoch [{epoch:03d}/{total_epochs:03d}] {phase_tag} | Step [{step:03d}/{len(train_loader):03d}] | "
+                    f"D_Loss: {d_loss_val:.4f} | G_Total: {g_loss.item():.4f} | "
                     f"L1: {g_losses['l1'].item():.4f} | MS-SSIM: {g_losses['ms_ssim'].item():.4f}"
                 )
+
+        scheduler_g.step()
+        if not in_warmup:
+            scheduler_d.step()
 
         epoch_time = time.time() - epoch_start
         avg_d = running_d_loss / len(train_loader)
         avg_g = running_g_loss / len(train_loader)
-        print(f"--> Epoch {epoch} complete in {epoch_time:.2f}s | Avg D_Loss: {avg_d:.4f} | Avg G_Loss: {avg_g:.4f}")
+        print(f"--> Epoch {epoch} complete in {epoch_time:.2f}s | Avg D_Loss: {avg_d:.4f} | Avg G_Loss: {avg_g:.4f} | LR_G: {scheduler_g.get_last_lr()[0]:.2e}")
 
         # -------------------------------------------------------------
         # Validation & Checkpointing

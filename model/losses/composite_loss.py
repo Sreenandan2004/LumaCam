@@ -77,6 +77,10 @@ def _ssim_components(
     # Contrast-structure measure: cs(x, y) = (2 * sigma_xy + C2) / (sigma_x^2 + sigma_y^2 + C2)
     cs_map = (2.0 * sigma_xy + c2) / torch.clamp(sigma_x_sq + sigma_y_sq + c2, min=1e-6)
 
+    # Numerically clamp to [0.0, 1.0] to prevent negative log inputs or NaN gradients
+    l_map = torch.clamp(l_map, min=0.0, max=1.0)
+    cs_map = torch.clamp(cs_map, min=0.0, max=1.0)
+
     return l_map, cs_map
 
 
@@ -158,9 +162,9 @@ class MSSSIMLoss(nn.Module):
                 f"Shape mismatch: predicted {predicted.shape} vs target {target.shape}"
             )
 
-        # Force float32 precision to prevent float16 catastrophic cancellation in variance
-        predicted = predicted.float()
-        target = target.float()
+        # Force float32 precision and clamp to [0, 1] to prevent float16 / out-of-bounds instability
+        predicted = torch.clamp(predicted.float(), 0.0, 1.0)
+        target = torch.clamp(target.float(), 0.0, 1.0)
 
         b, c, h, w = predicted.shape
         window = self._get_window(c, predicted.device, predicted.dtype)
@@ -191,7 +195,7 @@ class MSSSIMLoss(nn.Module):
                 # At coarsest scale M, also retain luminance
                 l_val = l_map.mean(dim=(-2, -1))   # (B, C)
                 # Clamp before power to prevent NaN or complex numbers from negative noise
-                l_val = torch.clamp(l_val, min=1e-5)
+                l_val = torch.clamp(l_val, min=1e-4, max=1.0)
                 mcs_list.append((cs_val, l_val))
             else:
                 mcs_list.append((cs_val, None))
@@ -206,13 +210,14 @@ class MSSSIMLoss(nn.Module):
 
         for scale_idx, (cs_val, l_val) in enumerate(mcs_list):
             w_s = active_weights[scale_idx]
-            cs_clamped = torch.clamp(cs_val, min=1e-5)
+            cs_clamped = torch.clamp(cs_val, min=1e-4, max=1.0)
             log_ms_ssim = log_ms_ssim + w_s * torch.log(cs_clamped)
 
             if l_val is not None:
-                log_ms_ssim = log_ms_ssim + w_s * torch.log(l_val)
+                l_clamped = torch.clamp(l_val, min=1e-4, max=1.0)
+                log_ms_ssim = log_ms_ssim + w_s * torch.log(l_clamped)
 
-        ms_ssim = torch.exp(log_ms_ssim).mean()  # Mean over batch and channels
+        ms_ssim = torch.clamp(torch.exp(log_ms_ssim).mean(), min=0.0, max=1.0)
         # Loss = 1 - MS-SSIM
         return 1.0 - ms_ssim
 
@@ -302,7 +307,8 @@ class CompositeLoss(nn.Module):
         self,
         predicted: torch.Tensor,
         target: torch.Tensor,
-        disc_fake_pred: torch.Tensor,
+        disc_fake_pred: Optional[torch.Tensor] = None,
+        use_adv: bool = True,
     ) -> Dict[str, torch.Tensor]:
         """
         Computes all component losses and total generator objective.
@@ -310,7 +316,8 @@ class CompositeLoss(nn.Module):
         Args:
             predicted: (B, 3, H, W) Generator output in [0, 1].
             target: (B, 3, H, W) Ground truth sRGB target in [0, 1].
-            disc_fake_pred: (B, 1, N, N) Discriminator output on predicted image.
+            disc_fake_pred: Optional (B, 1, N, N) Discriminator output on predicted image.
+            use_adv: Whether to include adversarial loss (set False during warmup).
 
         Returns:
             Dictionary with keys:
@@ -321,7 +328,11 @@ class CompositeLoss(nn.Module):
         """
         l1 = self.l1_loss(predicted, target)
         ms_ssim = self.ms_ssim_loss(predicted, target)
-        adv = self.adv_loss.generator_loss(disc_fake_pred)
+
+        if disc_fake_pred is not None and use_adv and self.lambda_adv > 0.0:
+            adv = self.adv_loss.generator_loss(disc_fake_pred)
+        else:
+            adv = torch.tensor(0.0, device=predicted.device, dtype=predicted.dtype)
 
         total = (
             self.lambda_l1 * l1
@@ -335,3 +346,4 @@ class CompositeLoss(nn.Module):
             "ms_ssim": ms_ssim,
             "adversarial": adv,
         }
+

@@ -54,8 +54,13 @@ class FiLMLayer(nn.Module):
         if cond_vector.ndim == 1:
             cond_vector = cond_vector.unsqueeze(-1)  # (B, 1)
 
+        # Normalize exposure amplification factor to logarithmic photographic EV space.
+        # Ratios typically range between 1.0x and 300.0x. log2(clamp(ratio, 1.0))/10.0 maps
+        # this into a well-conditioned range [0.0, ~0.82], preventing gradient explosion in MLP.
+        cond_normalized = torch.log2(torch.clamp(cond_vector, min=1.0)) / 10.0
+
         # Project condition vector to affine parameters (gamma, beta)
-        params = self.mlp(cond_vector)  # (B, 2 * C)
+        params = self.mlp(cond_normalized)  # (B, 2 * C)
         gamma, beta = torch.chunk(params, 2, dim=-1)
 
         # Reshape for broadcasting across spatial dimensions

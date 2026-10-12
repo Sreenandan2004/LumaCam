@@ -173,17 +173,14 @@ class SIDSonyDataset(Dataset):
         # Apply analytical exposure ratio amplification
         amplified_bayer = packed_bayer * ratio
 
-        # 5. Data Augmentations (Performed consistently across Bayer & RGB)
+        # 5. Data Augmentations (Preserving 2x2 Bayer CFA macro-pixel subpixel phase)
         if self.is_train:
-            if np.random.rand() > 0.5:  # Horizontal flip
+            if np.random.rand() > 0.5:  # Horizontal macro-pixel flip
                 amplified_bayer = np.flip(amplified_bayer, axis=1)
-                gt_patch = np.flip(gt_patch, axis=1)
-            if np.random.rand() > 0.5:  # Vertical flip
+                gt_patch = gt_patch.reshape(p, p // 2, 2, 3)[:, ::-1, :, :].reshape(p, p, 3)
+            if np.random.rand() > 0.5:  # Vertical macro-pixel flip
                 amplified_bayer = np.flip(amplified_bayer, axis=0)
-                gt_patch = np.flip(gt_patch, axis=0)
-            if np.random.rand() > 0.5:  # Transpose 90 deg
-                amplified_bayer = np.transpose(amplified_bayer, (1, 0, 2))
-                gt_patch = np.transpose(gt_patch, (1, 0, 2))
+                gt_patch = gt_patch.reshape(p // 2, 2, p, 3)[::-1, :, :, :].reshape(p, p, 3)
 
         # Convert to PyTorch format: (4, H/2, W/2) and (3, H, W)
         input_tensor = torch.from_numpy(amplified_bayer.transpose((2, 0, 1)).copy()).float()

@@ -27,6 +27,9 @@ training:
   lambda_l1: 100.0         # Pixel reconstruction loss weight
   lambda_ms_ssim: 10.0     # Multi-scale structural similarity loss weight
   lambda_adv: 1.0          # Adversarial PatchGAN loss weight
+  warmup_epochs: 5         # Warm-up epochs with pure reconstruction (L1 + MS-SSIM) before engaging GAN
+  clip_grad_norm: 5.0      # Gradient clipping ceiling to prevent GAN gradient spikes
+  lr_min: 1.0e-6           # Minimum learning rate for Cosine Annealing scheduler
   use_amp: false           # False for local GTX 1650 (Turing TU117 has no Tensor Cores); set True on Kaggle P100/T4
   d_steps_per_g_step: 1    # Alternating D/G update ratio
 
