@@ -93,3 +93,36 @@ Five stacked branches, each based on the previous one. Merge them into `dev` **i
   - The notebook's best checkpoint now also stores `config.model`, matching `model/train.py`, so the
     ONNX exporter can rebuild the generator.
   - Nandan (owner of `sid_dataset.py` / `train.py`) to review.
+
+### Added — ONNX exporter and Windows-installable requirements (branch 3, Lakshmi)
+
+- **What / Why:** Task 6. INT8 quantization (Task 7) could not start without an ONNX graph.
+  `model/export_onnx.py` adds:
+  - **`GeneratorExportWrapper`:** an explicit `input_bayer` + `alpha_exposure` → `enhanced_rgb` contract.
+    *Correction to the 2026-10-12 review:* PyTorch 2.14 does export the raw `(out, None)` generator,
+    because the tracer drops the `None`. So the wrapper makes the contract explicit; it does not fix a crash.
+  - **A fixed input shape by default** (`--dynamic` optional). The attention gates' `F.interpolate` resizes
+    become constants, which suits LiteRT and INT8.
+  - **`validate_input_size`:** packed H and W must be multiples of 16, because of the 4 MaxPool stages.
+  - **`load_generator`:** accepts `train.py` and notebook checkpoints and bare state dicts, rebuilds the model
+    from `config.model`, loads with `strict=True`, and requires an explicit `--random-init` for untrained weights.
+  - **`dynamo=False` pinned:** `torch.onnx.export` now defaults to `dynamo=True` (verified on 2.14.1).
+  - **Checks:** `onnx.checker` and a parity check against PyTorch on realistic inputs (values in [0, 1], α = 100).
+- **Also fixed:** `requirements.txt` installed `ai-edge-litert` on Windows with Python < 3.13, but it ships
+  Linux/macOS wheels only, so `pip install -r requirements.txt` failed on Windows. It is now skipped on
+  Windows (run LiteRT conversion on Kaggle/Colab/WSL). Added `pytest`.
+- **Environment note (not a repo change):** on this laptop, PyTorch (`c10.dll`) and onnxruntime failed with
+  `WinError 1114` because the Microsoft VC++ runtime was 14.26 (2020). Installing the current
+  VC++ 2015–2022 Redistributable x64 (14.51) fixed both. Anyone on Windows with this error should do the same.
+- **Files:** `model/export_onnx.py` (new), `tests/unit/test_export_onnx.py` (new), `requirements.txt`,
+  `Progress.md`.
+- **Verification:**
+  - `python -m pytest tests/unit/test_export_onnx.py -v` → **8 passed**: fixed and dynamic export, parity
+    at another size and batch (32×96, B=2), invalid sizes, and checkpoint formats.
+  - `python model/export_onnx.py --checkpoint checkpoints/lumacam_best.pt --test` on a `train.py` dry-run
+    checkpoint → 31.15 MB, opset 17, `onnx.checker` passed, **max |diff| = 8.9e-08** (PASS).
+  - Missing checkpoint and `--height 100` → clear error, exit code 1.
+- **Impact / Follow-ups:**
+  - `edge_opt/models/*.onnx` stays untracked (`.gitignore`; see OD-4 in `docs/api_specifications.md`).
+  - The `TracerWarning` from `attention_gate.py:57` is benign (explained in the module docstring).
+  - Whoever owns Task 7 (OD-3) can now start from `edge_opt/models/lumacam_fp32.onnx`.
