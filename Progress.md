@@ -1,11 +1,11 @@
 # LumaCam: Project Progress, Architecture State & AI Harness Handoff
 > **Repository**: `D:\Development\LumaCam`  
-> **Active Git Branch**: `feature/train-pipeline`  
+> **Active Git Branch**: `dev` (integration). Open feature branches are listed in [`CHANGELOG.md`](CHANGELOG.md).  
 > **Target Mobile Device**: Google Pixel 7 (Tensor G2, Camera2 Level 3 / RAW_SENSOR, NNAPI/GPU Delegate)  
 > **Development Hardware**: Local NVIDIA GTX 1650 (4GB VRAM) for testing + Google AI Pro / Colab / Kaggle P100 for full training  
 > **Academic Context**: Final Year Capstone Project — Team 21 (SCTCE, Guided by Asst. Prof. Arya Sreedhar)  
 > **Team Members**: Sreelakshmi A (262), Sreenandan S (263), Sreeveni R (264)  
-> **Last Updated**: October 11, 2026
+> **Last Updated**: October 12, 2026 (change history: [`CHANGELOG.md`](CHANGELOG.md))
 
 ---
 
@@ -57,7 +57,7 @@ For the upcoming Wednesday project review with Asst. Prof. Arya Sreedhar:
 
 | Benchmark Metric | Target | Verified Current State | Notes |
 |---|---|---|---|
-| **Pipeline Sanity** | 100% test pass | ✅ 10/10 tests passed (3.75s) | Confirmed zero gradient breaks and shape compatibility |
+| **Pipeline Sanity** | 100% test pass | ✅ 10/10 tests passed (3.75s); ✅ **46/46** on 2026-10-12 (model + dataset + ONNX export + color science, CPU, 41 s) | Confirmed zero gradient breaks and shape compatibility |
 | **GPU Execution Speed** | $\le 10$s / epoch dry-run | ✅ **4.45s / epoch** on GTX 1650 | 16 batches/epoch on NVIDIA GeForce GTX 1650 |
 | **VRAM Footprint** | $\le 3.5$ GB | ✅ **~200 MB VRAM** in float32 | Fits comfortably within 4GB VRAM ceiling |
 | **Baseline Validation PSNR** | Measurable metric | ✅ **11.80 dB** (untrained init) | Ready to scale up on Kaggle / Colab |
@@ -77,10 +77,12 @@ flowchart TD
         N5["✅ Task 5: Kaggle P100 Training Notebook (notebooks/train_lumacam_kaggle.ipynb)"]
     end
 
-    subgraph Lakshmi: Edge Optimization
-        L1["Task 6: Export PyTorch to ONNX (model/export_onnx.py)"]
-        L2["Task 7: INT8 Post-Training Quantization (edge_opt/quantize_int8.py)"]
-        L3["Task 8: FP32 vs INT8 PSNR & Latency Benchmarks (edge_opt/benchmark_edge.py)"]
+    subgraph Lakshmi: Export, Color Science & Docs
+        L1["✅ Task 6: Export PyTorch to ONNX (model/export_onnx.py)"]
+        L4["✅ Task 13: Color Science (model/postprocess/color_science.py)"]
+        L5["✅ API Contract (docs/api_specifications.md)"]
+        L2["Task 7: INT8 Post-Training Quantization (edge_opt/quantize_int8.py) — owner TBD (OD-3)"]
+        L3["Task 8: FP32 vs INT8 PSNR & Latency Benchmarks (edge_opt/benchmark_edge.py) — owner TBD (OD-3)"]
     end
 
     subgraph Veni: Mobile Application
@@ -98,7 +100,13 @@ flowchart TD
     L2 --> V3
 ```
 
-### Immediate Upcoming Tasks for Next Session:
-1. **Task 5 (Sreenandan)**: Create `notebooks/train_lumacam_kaggle.ipynb` so full training on the real SID Sony dataset can run on Kaggle's free Tesla P100 GPU to produce 25+ dB PSNR curves for Wednesday.
-2. **Task 6 (Lakshmi)**: Implement `model/export_onnx.py` to freeze the Generator with dual inputs (`input_bayer` and `alpha_cond`).
-3. **Task 9-10 (Veni)**: Scaffold Flutter GCam UI viewfinder and interactive EV slider.
+### Immediate Upcoming Tasks for Next Session (updated 2026-10-12):
+1. **Review & merge (Sreenandan):** merge Lakshmi's five stacked branches into `dev` in the order listed in
+   [`CHANGELOG.md`](CHANGELOG.md) (rules → dataset fixes → ONNX export → color science → API spec).
+2. **Retrain (Sreenandan):** the dataset fixes clip inputs to 1.0 and enforce the official SID split. Earlier
+   validation PSNR was measured on training scenes, so retrain on Kaggle before reporting benchmarks.
+3. **Decide open contract questions (Sreenandan + Veni):** OD-1 to OD-5 in
+   [`docs/api_specifications.md` § 7](docs/api_specifications.md). OD-1 (α range) blocks wiring the exposure slider.
+4. **INT8 quantization (owner per OD-3):** start from `python model/export_onnx.py --checkpoint checkpoints/lumacam_best.pt`.
+5. **Task 9-10 (Veni):** scaffold the Flutter GCam UI viewfinder and interactive EV slider.
+6. **Docs (Lakshmi):** `docs/base_paper_notes.md`, `docs/phase1_deliverables.md`.

@@ -212,6 +212,9 @@ class CameraScreen extends StatefulWidget { ... }
 /// Range: -3.0 to +3.0 (representing EV compensation)
 /// This value will later be mapped to the model's exposure conditioning alpha:
 ///   alpha = map(ev, -3.0, +3.0, 0.5, 3.0)
+/// ⚠️ OPEN DECISION OD-1 (docs/api_specifications.md § 7): the model is trained on alpha ≈ 100-300
+///   (exposure ratios), so this 0.5-3.0 mapping is out of distribution. Keep the slider in EV
+///   units for now and do not wire the mapping until OD-1 is decided.
 ///
 /// Visual design:
 ///   - Thin vertical track (2px, white 50% opacity)

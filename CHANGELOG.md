@@ -156,3 +156,83 @@ Five stacked branches, each based on the previous one. Merge them into `dev` **i
   - AGENTS.md § 4 (Workstream 3) now says gamma encoding applies only to linear data. The generator's output must
     not be gamma-corrected again.
   - Veni/Nandan: the Android port of this pipeline (Kotlin or C++) should follow `docs/api_specifications.md` § 6.
+
+### Docs — API contract, open decisions, and stale planning docs (branch 5, Lakshmi)
+
+- **What / Why:** The tensor contract between dataset, model, ONNX artifact and Android app existed only
+  implicitly in code, and several planning docs were stale or wrong.
+  - **`docs/api_specifications.md` (new):** the single source of truth for:
+    - `input_bayer` (shape, `[R, G1, B, G2]` channel order, normalization, 1.0 ceiling, multiple-of-16 rule,
+      even-offset crops, reading sensor constants from Camera2 instead of hard-coding Sony's);
+    - `alpha_exposure` and `enhanced_rgb` (gamma-encoded sRGB, camera WB baked in);
+    - the checkpoint format, the ONNX artifact, and the post-processing defaults.
+  - **Open Decisions** (in the spec, § 7), recorded instead of changed in code (Master Rule 5):
+    - **OD-1:** the app's α mapping (0.5–3.0) vs the trained α (100–300).
+    - **OD-2:** α is applied twice (input amplification + FiLM).
+    - **OD-3:** who owns INT8 (Task 7) and benchmarks (Task 8). `TEAM_PLAN.md`/`me.md` and `Progress.md` disagree.
+    - **OD-4:** `.onnx`/`.tflite` are gitignored, but AGENTS.md says to track them with Git LFS.
+    - **OD-5:** 8-bit vs 16-bit ground truth.
+  - **`TEAM_PLAN.md`:** the handoff links pointed to `file:///C:/Users/imsre/.gemini/...` on another machine.
+    They are now relative links, plus pointers to the change log and the API spec.
+  - **`lakshmi.md`:**
+    - status banner: Task 2 was done by Nandan and fixed here, the loader returns a tuple not a dict,
+      Tasks 6 and 13 are done, and the spec's extra gamma is superseded;
+    - checklist corrected (`d[0][0]`, not `d[0]['input']`) and ticked.
+  - **`veni.md`:** OD-1 warning on the EV→α mapping, so the slider is not wired to an out-of-distribution α.
+  - **`Progress.md`:**
+    - header (date, active branch);
+    - task graph (Tasks 6 and 13 done; Tasks 7 and 8 owner TBD);
+    - next steps (merge order, retrain, open decisions);
+    - test count 46/46.
+- **Files:** `docs/api_specifications.md` (new), `TEAM_PLAN.md`, `lakshmi.md`, `veni.md`, `Progress.md`, `CHANGELOG.md`.
+- **Verification:**
+  - Documentation only.
+  - The facts it cites were checked: `python -m pytest tests/unit -q` → **46 passed**.
+  - `DummySIDDataset()[0][0].shape` → `torch.Size([4, 256, 256])`.
+  - rawpy 0.27.1 default gamma is `(0.45, 4.5)`.
+  - `torch.onnx.export` defaults to `dynamo=True` on torch 2.14.1.
+- **Impact / Follow-ups:** Nandan and Veni to decide OD-1 to OD-5. Until OD-1 is settled, the app must not
+  map the EV slider to α.
+
+### Open Decisions (summary — details in `docs/api_specifications.md` § 7)
+
+| ID | Question | Owners | Status |
+|---|---|---|---|
+| OD-1 | α units/range from the app vs trained range 100–300 | Nandan, Veni | Half resolved: model normalizes α (`f56bf4c`); app range still open, blocks slider→α wiring |
+| OD-2 | α applied to both the input and FiLM | Nandan | Open |
+| OD-3 | Owner of INT8 (Task 7) and edge benchmarks (Task 8) | Nandan | ✅ Resolved: Lakshmi (`report.md` § 5) |
+| OD-4 | Git LFS for `.onnx`/`.tflite` vs `.gitignore` | Nandan | Open |
+| OD-5 | 8-bit vs 16-bit ground truth | Nandan | Open (next retrain) |
+| OD-6 | ONNX input name `alpha_exposure` vs `alpha_cond`; fixed vs dynamic shapes in `report.md` | Nandan, Lakshmi | Open |
+
+### Docs — OD-3 resolved, OD-6 added after rebasing onto `report.md` (branch 5, Lakshmi)
+
+- **What / Why:** Nandan pushed `history.md` and `report.md` to `dev` (`cb97788`..`05e5a48`). `report.md` § 5 makes
+  Lakshmi the *Edge Optimization & LiteRT Runtime Lead*. That resolves **OD-3**: INT8 PTQ, the calibration set,
+  the LiteRT Android delegates and Pixel 7 profiling are hers, and color science moves to Veni. The report also
+  names the second ONNX input `alpha_cond` and calls the spatial dimensions dynamic. Both conflict with the
+  exporter (`alpha_exposure`, fixed shape by default), so this is recorded as the new **OD-6** instead of changing
+  code or Nandan's report.
+- **Files:** `docs/api_specifications.md` (§ 7), `CHANGELOG.md`.
+- **Verification:** Documentation only. All 5 branches were rebased onto `origin/dev` `05e5a48` (one `Progress.md`
+  conflict, resolved by keeping both sides' rows). `python -m pytest tests/unit -q` → 46 passed at the stack tip.
+- **Impact / Follow-ups:** Nandan and Lakshmi to settle OD-6 before the Android LiteRT wrapper is written.
+
+### Docs — OD-1 half resolved by `f56bf4c`, old checkpoints incompatible (branch 5, Lakshmi, 2026-10-22)
+
+- **What / Why:** Nandan's `f56bf4c` on `dev` (GAN stabilization) changes two things the contract describes:
+  - FiLM now feeds its MLP `log2(max(α, 1)) / 10` instead of the raw ratio. That is the model-side half of OD-1's
+    proposal. The app side stays open: α still multiplies the input, and the clamp maps the app's planned
+    α ∈ [0.5, 3.0] to 0–0.16, far from the trained 0.66–0.82. The model input is still the raw ratio.
+  - Every Attention Gate gains a GroupNorm (`norm.weight` / `norm.bias`), so checkpoints from before it fail a
+    strict load.
+- **Files:** `docs/api_specifications.md` (§ 2.2, § 4, § 7 OD-1), `CHANGELOG.md`.
+- **Verification:** Documentation only. Read `f56bf4c`'s diff of `model/networks/conditioning.py` and
+  `attention_gate.py`. The values follow from it: log2(100)/10 = 0.664, log2(300)/10 = 0.823, log2(3)/10 = 0.158.
+  - Merging the 7 stacked branches into `origin/dev` `f56bf4c` in PR order (temporary worktree) gives no conflicts.
+    `pytest tests/unit` passes after every merge: 10 → 10 → 22 → 30 → 46 → 46 → 62.
+  - `load_generator("checkpoints/lumacam_best.pt")` (2026-10-12) on the merged code raises
+    `RuntimeError: Missing key(s) ... "ag4.norm.weight", "ag4.norm.bias", ...`.
+- **Impact / Follow-ups:**
+  - **Veni + Nandan:** agree on the on-device α computation (OD-1 proposal) before wiring the slider.
+  - **Nandan:** retrain on Kaggle; `checkpoints/lumacam_best.pt` from 2026-10-12 no longer loads.

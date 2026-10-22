@@ -14,9 +14,12 @@ Optimized task split for a **2-week deadline** where:
 
 > [!NOTE]
 > Each member has a dedicated handoff document with full AI-agent-ready specs:
-> - [`me.md`](file:///C:/Users/imsre/.gemini/antigravity-cli/brain/7e92771b-8eeb-4d1b-8e95-dee215f0e6cc/me.md) — Sreenandan's tasks
-> - [`veni.md`](file:///C:/Users/imsre/.gemini/antigravity-cli/brain/7e92771b-8eeb-4d1b-8e95-dee215f0e6cc/veni.md) — Veni's tasks
-> - [`lakshmi.md`](file:///C:/Users/imsre/.gemini/antigravity-cli/brain/7e92771b-8eeb-4d1b-8e95-dee215f0e6cc/lakshmi.md) — Lakshmi's tasks
+> - [`me.md`](me.md) — Sreenandan's tasks
+> - [`veni.md`](veni.md) — Veni's tasks
+> - [`lakshmi.md`](lakshmi.md) — Lakshmi's tasks
+>
+> Every change is logged in [`CHANGELOG.md`](CHANGELOG.md) ([AGENTS.md § 0](AGENTS.md)). Cross-team
+> tensor contracts live in [`docs/api_specifications.md`](docs/api_specifications.md).
 
 ---
 
