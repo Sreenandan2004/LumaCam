@@ -52,6 +52,7 @@ Bayer RAW (H, W) uint16
 | Current meaning | Exposure ratio `t_long / t_short` (SID Sony ratios are 100, 250, 300) |
 | Trained range | ~100–300. Values outside this range are **out of distribution** for the FiLM MLP. |
 | Used twice | It multiplies the input (§ 2.1) **and** conditions the bottleneck through FiLM. |
+| FiLM normalization | Since `f56bf4c` (Nandan), FiLM feeds its MLP `log2(max(α, 1)) / 10`, **inside the model**. The trained ratios 100 / 250 / 300 become 0.66 / 0.80 / 0.82. Callers still pass the **raw ratio**; the ONNX/LiteRT input is unchanged. |
 
 > ⚠️ See **OD-1** below. The app spec (`veni.md`) currently maps the EV slider to α ∈ [0.5, 3.0],
 > which does not match this contract.
@@ -82,6 +83,10 @@ Produced by `model/train.py` and `notebooks/train_lumacam_kaggle.ipynb`:
     # train.py also stores discriminator / optimizer states for --resume
 }
 ```
+
+> ⚠️ **Checkpoints from before `f56bf4c` (2026-10-12) are incompatible.** That commit adds a GroupNorm
+> (`norm.weight` / `norm.bias`) to every Attention Gate and changes what the FiLM MLP sees (§ 2.2), so older
+> state dicts fail a strict load and would be miscalibrated anyway. Retrain before exporting.
 
 `model/export_onnx.py::load_generator` also accepts `{"state_dict": ...}` and bare state dicts.
 If no config is stored, it uses the defaults above. Checkpoints are loaded with
@@ -128,7 +133,7 @@ NumPy `(H, W, 3)` callers use `apply_color_pipeline_np`.
 
 | ID | Decision | Owners | Notes / proposal |
 |---|---|---|---|
-| **OD-1** | **Units and range of `alpha_exposure` from the app.** The model is trained on α ≈ 100–300, but `veni.md` maps the EV slider to α ∈ [0.5, 3.0]. | Nandan, Veni | **Short term (no retraining):** compute α in the ratio domain on device, e.g. `alpha = alpha_base × 2^EV`, where `alpha_base` comes from metering (target exposure / actual exposure) and is clamped to [100, 300]. **At the next retrain:** feed FiLM a normalized value such as `log2(alpha) / log2(300)`, so the conditioning MLP sees inputs of order 1 instead of raw 100–300. That change alters the checkpoint semantics and needs a coordinated retrain plus a re-export. |
+| **OD-1** | **Units and range of `alpha_exposure` from the app.** The model is trained on α ≈ 100–300, but `veni.md` maps the EV slider to α ∈ [0.5, 3.0]. | Veni, Nandan | **Half resolved (2026-10-22).** ✅ *Model side:* Nandan's `f56bf4c` normalizes α inside FiLM (`log2(max(α, 1)) / 10`, § 2.2), which covers the old "at the next retrain" proposal. 🔴 *App side, still open:* the app must still send the **raw ratio**. α also amplifies the input (§ 2.1), so α ∈ [0.5, 3.0] gives a nearly black input. In FiLM, the clamp maps everything below 1 to 0, so 0.5–3.0 becomes 0–0.16 instead of the trained 0.66–0.82. **Proposal:** compute α on device as `alpha = alpha_base × 2^EV`, with `alpha_base` from metering (target / actual exposure), clamped to [100, 300]. The slider moves EV, not α. Blocks wiring the slider until Veni and Nandan agree. |
 | **OD-2** | **α is applied twice** (input amplification + FiLM). | Nandan | This is intentional per `sid_dataset.py`, but it means the slider changes the input brightness and the latent modulation together. Decide whether FiLM should instead receive a *residual* exposure offset (EV) independent of the base amplification. |
 | **OD-3** ✅ | **Owner of INT8 quantization (Task 7) and edge benchmarks (Task 8).** | Nandan | **Resolved 2026-10-12 by `report.md` § 5 and `history.md`:** Lakshmi is *Edge Optimization & LiteRT Runtime Lead*. She owns the ONNX export, INT8 PTQ with the calibration set (Oct 15), the LiteRT Android delegates, and Pixel 7 profiling (Oct 18). Post-inference color science moves to Veni, who ports `model/postprocess/color_science.py` to Android. `TEAM_PLAN.md` / `me.md` are outdated on this point. |
 | **OD-4** | **Model binaries vs `.gitignore`.** AGENTS.md § 6 says to track `.onnx`/`.tflite` with Git LFS, but `.gitignore` ignores `*.onnx` and `*.tflite`. | Nandan | Either add `git lfs track "*.onnx" "*.tflite"` with a `.gitignore` exception for `edge_opt/models/`, or publish artifacts as GitHub release assets. |

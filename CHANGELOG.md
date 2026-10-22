@@ -198,7 +198,7 @@ Five stacked branches, each based on the previous one. Merge them into `dev` **i
 
 | ID | Question | Owners | Status |
 |---|---|---|---|
-| OD-1 | α units/range from the app vs trained range 100–300 | Nandan, Veni | Open, blocks slider→α wiring |
+| OD-1 | α units/range from the app vs trained range 100–300 | Nandan, Veni | Half resolved: model normalizes α (`f56bf4c`); app range still open, blocks slider→α wiring |
 | OD-2 | α applied to both the input and FiLM | Nandan | Open |
 | OD-3 | Owner of INT8 (Task 7) and edge benchmarks (Task 8) | Nandan | ✅ Resolved: Lakshmi (`report.md` § 5) |
 | OD-4 | Git LFS for `.onnx`/`.tflite` vs `.gitignore` | Nandan | Open |
@@ -217,3 +217,22 @@ Five stacked branches, each based on the previous one. Merge them into `dev` **i
 - **Verification:** Documentation only. All 5 branches were rebased onto `origin/dev` `05e5a48` (one `Progress.md`
   conflict, resolved by keeping both sides' rows). `python -m pytest tests/unit -q` → 46 passed at the stack tip.
 - **Impact / Follow-ups:** Nandan and Lakshmi to settle OD-6 before the Android LiteRT wrapper is written.
+
+### Docs — OD-1 half resolved by `f56bf4c`, old checkpoints incompatible (branch 5, Lakshmi, 2026-10-22)
+
+- **What / Why:** Nandan's `f56bf4c` on `dev` (GAN stabilization) changes two things the contract describes:
+  - FiLM now feeds its MLP `log2(max(α, 1)) / 10` instead of the raw ratio. That is the model-side half of OD-1's
+    proposal. The app side stays open: α still multiplies the input, and the clamp maps the app's planned
+    α ∈ [0.5, 3.0] to 0–0.16, far from the trained 0.66–0.82. The model input is still the raw ratio.
+  - Every Attention Gate gains a GroupNorm (`norm.weight` / `norm.bias`), so checkpoints from before it fail a
+    strict load.
+- **Files:** `docs/api_specifications.md` (§ 2.2, § 4, § 7 OD-1), `CHANGELOG.md`.
+- **Verification:** Documentation only. Read `f56bf4c`'s diff of `model/networks/conditioning.py` and
+  `attention_gate.py`. The values follow from it: log2(100)/10 = 0.664, log2(300)/10 = 0.823, log2(3)/10 = 0.158.
+  - Merging the 7 stacked branches into `origin/dev` `f56bf4c` in PR order (temporary worktree) gives no conflicts.
+    `pytest tests/unit` passes after every merge: 10 → 10 → 22 → 30 → 46 → 46 → 62.
+  - `load_generator("checkpoints/lumacam_best.pt")` (2026-10-12) on the merged code raises
+    `RuntimeError: Missing key(s) ... "ag4.norm.weight", "ag4.norm.bias", ...`.
+- **Impact / Follow-ups:**
+  - **Veni + Nandan:** agree on the on-device α computation (OD-1 proposal) before wiring the slider.
+  - **Nandan:** retrain on Kaggle; `checkpoints/lumacam_best.pt` from 2026-10-12 no longer loads.
