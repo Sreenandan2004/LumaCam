@@ -125,7 +125,8 @@ To ensure clear ownership, avoid merge conflicts, and allow parallel progress ac
   - Develop Pixel GCam UI: minimalist viewfinder, bottom mode carousel, double-tap zoom, interactive exposure slider.
   - Build Android native plugin using Camera2 API with `ImageReader` / `SurfaceTexture`.
   - Connect user exposure slider to inference conditioning input in real time.
-  - Implement post-processing pipeline (auto white balance, contrast stretching, gamma correction).
+  - Implement post-processing pipeline (auto white balance, contrast stretching, gamma correction). The generator
+    already outputs gamma-encoded sRGB, so apply gamma encoding only to linear data (`model/postprocess/color_science.py`).
   - Handle full-resolution photo capture, storage permissions, and photo gallery preview.
 
 ---
@@ -152,6 +153,7 @@ LumaCam/
 │   │   ├── conditioning.py                 # Latent vector injection layer (FiLM / Bottleneck)
 │   │   └── discriminator.py                # 70x70 PatchGAN Discriminator
 │   ├── losses/                             # L1, MS-SSIM, Perceptual, Adversarial loss functions
+│   ├── postprocess/                        # Post-inference color science (AWB, sRGB transfer, saturation)
 │   ├── train.py                            # Main training loop
 │   ├── evaluate.py                         # PSNR, SSIM, LPIPS benchmarking script
 │   └── export_onnx.py                      # ONNX exporter

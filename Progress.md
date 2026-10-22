@@ -47,6 +47,7 @@ The following core modules, training infrastructure, and tests have been impleme
 | [`history.md`](history.md) | Sprint Execution Log | ✅ Complete | Chronological day-by-day executed plan (Oct 5 – Oct 19) tracking daily milestones, blockers, and Git commits. |
 | [`report.md`](report.md) | Technical Capstone Report | ✅ Complete | Academic project report with full LaTeX mathematical formulations, architecture diagrams, and team breakdown. |
 | [`model/export_onnx.py`](model/export_onnx.py) | ONNX Exporter (Task 6) | ✅ Complete (2026-10-12, Lakshmi) | Exports the generator as `input_bayer` + `alpha_exposure` → `enhanced_rgb` (opset 17, fixed 256×256 by default, `--dynamic` optional), runs `onnx.checker`, and checks PyTorch↔ONNX Runtime parity. Verified on a `train.py` checkpoint: 31.15 MB FP32, max \|diff\| 8.9e-08. 8 tests in `tests/unit/test_export_onnx.py`. Unblocks INT8 quantization (Task 7). |
+| [`model/postprocess/color_science.py`](model/postprocess/color_science.py) | Color Science (Task 13) | ✅ Complete (2026-10-12, Lakshmi) | `apply_color_pipeline`: Gray-World AWB in **linear** light (strength 0.5, capped gains, clipped pixels ignored), IEC sRGB transfer functions, hue-preserving saturation ×1.15. **No extra gamma on model output**, which is already BT.709-gamma sRGB. NumPy wrapper `apply_color_pipeline_np`. 16 tests in `tests/unit/test_color_science.py`. |
 
 ---
 
