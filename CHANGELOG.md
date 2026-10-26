@@ -11,6 +11,14 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Added — Evaluation benchmarking suite & automated report generator (Nandan)
+
+- **What / Why:** Completed Step 2 of Thursday presentation plan: enhanced model/evaluate.py with multi-stage evaluation (comparing Linear ISO Gain, LumaCam Generator, and LumaCam + Color Science), persistent JSON/Markdown report generation in 
+esults/, UTF-8 Windows terminal support, and added unit test suite 	ests/unit/test_evaluate.py.
+- **Files:** model/evaluate.py, 	ests/unit/test_evaluate.py, CHANGELOG.md.
+- **Verification:** Ran python model/evaluate.py on GTX 1650 (70.4 FPS, 14.20 ms latency). All 49 unit tests pass (pytest tests/unit -q).
+- **Impact / Follow-ups:** Produces publication and slide-ready quantitative benchmark tables for Thursday reviews.
+
 ### Added — Interactive Streamlit demo dashboard and evaluation suite (Nandan)
 
 - **What / Why:** Needed a real-time, interactive demonstrator for Thursday capstone reviews showing live exposure slider (α) modulation, 4-way computational photography comparison (Raw Bayer -> Linear Gain -> LumaCam GAN -> Color Science), explainable AI Attention Gate heatmaps, and latency/PSNR metrics cards.
