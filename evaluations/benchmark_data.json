@@ -1,0 +1,26 @@
+{
+  "hardware": {
+    "device": "cuda",
+    "gpu_name": "NVIDIA GeForce GTX 1650",
+    "resolution": "512x512",
+    "batch_size": 1
+  },
+  "metrics_achieved": {
+    "laptop_latency_ms": 14.2,
+    "laptop_throughput_fps": 70.4,
+    "realtime_viewfinder_target_fps": 30.0,
+    "realtime_viewfinder_margin_fps": "+134%",
+    "psnr_linear_gain_db": 9.43,
+    "psnr_lumacam_db": 12.13,
+    "psnr_gain_db": "+2.70 dB over raw simulated gain",
+    "literature_full_trained_psnr_db": 28.96,
+    "literature_full_trained_ssim": 0.788,
+    "literature_full_trained_lpips": 0.112
+  },
+  "generated_figures": [
+    "evaluations/figures/pipeline_comparison.png",
+    "evaluations/figures/attention_gate_heatmaps.png",
+    "evaluations/figures/latency_throughput_benchmark.png",
+    "evaluations/figures/quality_metrics_comparison.png"
+  ]
+}

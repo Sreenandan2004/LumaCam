@@ -51,6 +51,7 @@ The following core modules, training infrastructure, and tests have been impleme
 | [`app.py`](app.py) | Interactive Demo GUI | ✅ Complete (2026-10-26, Nandan) | Real-time Streamlit dashboard showcasing 4-way computational photography comparison, tactile exposure slider (α), Attention Gate XAI heatmaps, and latency/PSNR metrics. |
 | [`model/evaluate.py`](model/evaluate.py) | Benchmark Suite | ✅ Complete (2026-10-26, Nandan) | Standalone evaluation runner computing quantitative PSNR, SSIM, and latency statistics across SID test scenes. |
 
+| [evaluations/metrics_guide.md](evaluations/metrics_guide.md) | Metrics & Presentation Guide | ✅ Complete (2026-10-26, Nandan) | Comprehensive teacher guide explaining visual figures, Attention Gate XAI, PSNR/SSIM/LPIPS formulas, latency targets, and viva Q&A talking points. |
 ---
 
 ## 3. Wednesday MVP & Benchmark Status (October 14 Milestone)

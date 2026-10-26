@@ -11,6 +11,13 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Added — Evaluation showcase figures, benchmark data & presentation guide (Nandan)
+
+- **What / Why:** Created a dedicated evaluations/ directory with publication-quality 300 DPI figures (end-to-end pipeline comparison, 4-scale Attention Gate XAI heatmaps, latency vs throughput trade-off, and PSNR/SSIM charts), structured enchmark_data.json, and evaluations/metrics_guide.md containing mathematical explanations and viva defense talking points for teachers.
+- **Files:** evaluations/metrics_guide.md, evaluations/benchmark_data.json, evaluations/figures/pipeline_comparison.png, evaluations/figures/attention_gate_heatmaps.png, evaluations/figures/latency_throughput_benchmark.png, evaluations/figures/quality_metrics_comparison.png, scripts/generate_showcase_artifacts.py, CHANGELOG.md, Progress.md, AGENTS.md.
+- **Verification:** Ran python scripts/generate_showcase_artifacts.py on CUDA. All 49 unit tests pass (pytest tests/unit -q).
+- **Impact / Follow-ups:** Equips team members with visual slides, figures, and technical answers for Thursday project evaluation.
+
 ### Added — Evaluation benchmarking suite & automated report generator (Nandan)
 
 - **What / Why:** Completed Step 2 of Thursday presentation plan: enhanced model/evaluate.py with multi-stage evaluation (comparing Linear ISO Gain, LumaCam Generator, and LumaCam + Color Science), persistent JSON/Markdown report generation in 

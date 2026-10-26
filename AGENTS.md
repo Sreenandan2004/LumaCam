@@ -140,6 +140,10 @@ LumaCam/
 ├── Progress.md                             # Milestone status & next steps
 ├── README.md                               # Public project documentation & demo media
 ├── app.py                                  # Interactive Streamlit camera demo & metrics dashboard
+├── evaluations/                            # Benchmark metrics, figures, and presentation guide
+│   ├── figures/                            # High-res diagrams for slides & reports
+│   ├── benchmark_data.json                 # Quantitative metrics
+│   └── metrics_guide.md                    # Teacher presentation manual & viva Q&A
 ├── .gitignore                              # Comprehensive git ignore (Python, Flutter, Android, Models)
 ├── docs/                                   # Architectural diagrams, papers, and phase reports
 │   ├── base_paper_notes.md
