@@ -17,6 +17,7 @@ wandb/
 runs/
 results/
 *.log
+lumacam_best*/
 
 # Dataset & Raw Media
 *.ARW

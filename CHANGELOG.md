@@ -11,6 +11,14 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Added — Interactive Streamlit demo dashboard and evaluation suite (Nandan)
+
+- **What / Why:** Needed a real-time, interactive demonstrator for Thursday capstone reviews showing live exposure slider (α) modulation, 4-way computational photography comparison (Raw Bayer -> Linear Gain -> LumaCam GAN -> Color Science), explainable AI Attention Gate heatmaps, and latency/PSNR metrics cards.
+- **Files:** pp.py, model/evaluate.py, 
+equirements.txt, AGENTS.md, Progress.md, CHANGELOG.md.
+- **Verification:** Tested on NVIDIA GeForce GTX 1650 (CUDA) with checkpoints/lumacam_best.pt. All 46 unit tests pass (pytest tests/unit -v).
+- **Impact / Follow-ups:** Provides the team with an interactive GUI ready to present to faculty; unblocks visual evaluation while mobile integration proceeds.
+
 ### Branch Sequence — Lakshmi's review fixes (2026-10-12)
 
 Five stacked branches, each based on the previous one. Merge them into `dev` **in this order**:

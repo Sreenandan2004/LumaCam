@@ -26,6 +26,7 @@ ai-edge-litert>=1.0.0; platform_system != "Windows"
 pyyaml>=6.0.1
 tqdm>=4.66.0
 matplotlib>=3.8.0
+streamlit>=1.30.0
 
 # Testing
 pytest>=8.0.0

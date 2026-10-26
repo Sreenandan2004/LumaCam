@@ -139,6 +139,7 @@ LumaCam/
 ├── CHANGELOG.md                            # Mandatory change log (see Section 0, Master Rules)
 ├── Progress.md                             # Milestone status & next steps
 ├── README.md                               # Public project documentation & demo media
+├── app.py                                  # Interactive Streamlit camera demo & metrics dashboard
 ├── .gitignore                              # Comprehensive git ignore (Python, Flutter, Android, Models)
 ├── docs/                                   # Architectural diagrams, papers, and phase reports
 │   ├── base_paper_notes.md
