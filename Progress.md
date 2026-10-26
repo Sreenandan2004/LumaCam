@@ -52,6 +52,7 @@ The following core modules, training infrastructure, and tests have been impleme
 | [`model/evaluate.py`](model/evaluate.py) | Benchmark Suite | ✅ Complete (2026-10-26, Nandan) | Standalone evaluation runner computing quantitative PSNR, SSIM, and latency statistics across SID test scenes. |
 
 | [evaluations/metrics_guide.md](evaluations/metrics_guide.md) | Metrics & Presentation Guide | ✅ Complete (2026-10-26, Nandan) | Comprehensive teacher guide explaining visual figures, Attention Gate XAI, PSNR/SSIM/LPIPS formulas, latency targets, and viva Q&A talking points. |
+| [edge_opt/benchmark_onnx.py](edge_opt/benchmark_onnx.py) | ONNX Runtime Profiler | ✅ Complete (2026-10-26, Nandan) | Automated latency and throughput benchmarking for exported ONNX graphs across execution providers. |
 ---
 
 ## 3. Wednesday MVP & Benchmark Status (October 14 Milestone)

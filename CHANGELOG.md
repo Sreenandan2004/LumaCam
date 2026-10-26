@@ -11,6 +11,13 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Added — Production ONNX export, benchmark runner & edge profiling (Nandan)
+
+- **What / Why:** Completed Step 3A of edge optimization: exported checkpoints/lumacam_best.pt to production ONNX graph (edge_opt/models/lumacam_generator.onnx, 31.16 MB) with verified numeric parity vs PyTorch (max |diff| = 2.38e-07). Implemented edge_opt/benchmark_onnx.py for profiling ONNX Runtime latency, and added 	ests/unit/test_onnx_benchmark.py.
+- **Files:** edge_opt/benchmark_onnx.py, 	ests/unit/test_onnx_benchmark.py, CHANGELOG.md, Progress.md.
+- **Verification:** Ran export_onnx.py on CUDA checkpoint; all 53 unit tests pass (pytest tests/unit -q).
+- **Impact / Follow-ups:** Unblocks Step 3B (INT8 LiteRT quantization for Pixel 7).
+
 ### Added — Evaluation showcase figures, benchmark data & presentation guide (Nandan)
 
 - **What / Why:** Created a dedicated evaluations/ directory with publication-quality 300 DPI figures (end-to-end pipeline comparison, 4-scale Attention Gate XAI heatmaps, latency vs throughput trade-off, and PSNR/SSIM charts), structured enchmark_data.json, and evaluations/metrics_guide.md containing mathematical explanations and viva defense talking points for teachers.
