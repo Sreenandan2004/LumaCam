@@ -53,6 +53,8 @@ The following core modules, training infrastructure, and tests have been impleme
 
 | [evaluations/metrics_guide.md](evaluations/metrics_guide.md) | Metrics & Presentation Guide | ✅ Complete (2026-10-26, Nandan) | Comprehensive teacher guide explaining visual figures, Attention Gate XAI, PSNR/SSIM/LPIPS formulas, latency targets, and viva Q&A talking points. |
 | [edge_opt/benchmark_onnx.py](edge_opt/benchmark_onnx.py) | ONNX Runtime Profiler | ✅ Complete (2026-10-26, Nandan) | Automated latency and throughput benchmarking for exported ONNX graphs across execution providers. |
+| [edge_opt/quantize_int8.py](edge_opt/quantize_int8.py) | INT8 PTQ Quantizer | ✅ Complete (2026-10-26, Nandan) | Converts FP32 ONNX graph to INT8 QDQ precision, shrinking model from 31.16 MB to 7.94 MB (74.5% reduction) for Google Pixel 7 Tensor G2 NPU. |
+| [docs/pixel7_benchmarking.md](docs/pixel7_benchmarking.md) | Pixel 7 Edge Guide | ✅ Complete (2026-10-26, Nandan) | Step-by-step ADB hardware profiling instructions and automation script for Google Pixel 7 Tensor G2. |
 ---
 
 ## 3. Wednesday MVP & Benchmark Status (October 14 Milestone)

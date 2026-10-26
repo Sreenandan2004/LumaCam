@@ -11,6 +11,13 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Added — INT8 Post-Training Quantization & Pixel 7 Edge Deployment Harness (Nandan)
+
+- **What / Why:** Completed Steps 3B & 3C of edge optimization: built edge_opt/quantize_int8.py with static QDQ calibration (SIDCalibrationDataReader), compressing the model from 31.16 MB (FP32) to 7.94 MB (INT8, a 74.5% reduction). Added 	ests/unit/test_quantize_int8.py, Google Pixel 7 ADB benchmark runner (edge_opt/benchmark_pixel7.ps1), and on-device guide (docs/pixel7_benchmarking.md).
+- **Files:** edge_opt/quantize_int8.py, 	ests/unit/test_quantize_int8.py, edge_opt/benchmark_pixel7.ps1, docs/pixel7_benchmarking.md, CHANGELOG.md, Progress.md.
+- **Verification:** Generated lumacam_generator_int8.onnx (7.94 MB) and passed onnxruntime inference sanity check; all 56 unit tests pass (pytest tests/unit -q).
+- **Impact / Follow-ups:** Model is now lightweight and edge-ready for mobile deployment on the Google Pixel 7 Tensor G2 NPU.
+
 ### Added — Production ONNX export, benchmark runner & edge profiling (Nandan)
 
 - **What / Why:** Completed Step 3A of edge optimization: exported checkpoints/lumacam_best.pt to production ONNX graph (edge_opt/models/lumacam_generator.onnx, 31.16 MB) with verified numeric parity vs PyTorch (max |diff| = 2.38e-07). Implemented edge_opt/benchmark_onnx.py for profiling ONNX Runtime latency, and added 	ests/unit/test_onnx_benchmark.py.
