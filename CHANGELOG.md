@@ -11,6 +11,13 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Added — Pixel GCam mobile app scaffolding, interactive split slider & HUD (Nandan & Veni)
+
+- **What / Why:** Completed Tasks 9 & 10 of mobile application workstream: created the Flutter project in mobile/ with a Pixel GCam interface. Features an interactive before/after split slider comparing sensor Bayer/ISO boost against LumaCam + GCam ISP, a tactile vertical exposure slider (α in [1, 300]), live performance matrix HUD (latency, FPS, SNR gain), animated GCam shutter button, mode carousel, and an expandable bottom sheet showcasing Kaggle cloud training metrics (500 epochs, L1 + MS-SSIM + cGAN loss) and Attention Gate XAI heatmaps for faculty reviews.
+- **Files:** mobile/lib/, mobile/assets/, mobile/pubspec.yaml, mobile/test/widget_test.dart, CHANGELOG.md, Progress.md, eni.md, AGENTS.md.
+- **Verification:** Ran lutter test in mobile/ (smoke test, mode carousel selection, and interactive HUD toggling all passed).
+- **Impact / Follow-ups:** Unblocks on-device visual evaluation and Camera2 / LiteRT integration for the Pixel 7.
+
 ### Added — INT8 Post-Training Quantization & Pixel 7 Edge Deployment Harness (Nandan)
 
 - **What / Why:** Completed Steps 3B & 3C of edge optimization: built edge_opt/quantize_int8.py with static QDQ calibration (SIDCalibrationDataReader), compressing the model from 31.16 MB (FP32) to 7.94 MB (INT8, a 74.5% reduction). Added 	ests/unit/test_quantize_int8.py, Google Pixel 7 ADB benchmark runner (edge_opt/benchmark_pixel7.ps1), and on-device guide (docs/pixel7_benchmarking.md).

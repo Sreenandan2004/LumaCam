@@ -87,13 +87,13 @@ flowchart TD
         L1["✅ Task 6: Export PyTorch to ONNX (model/export_onnx.py)"]
         L4["✅ Task 13: Color Science (model/postprocess/color_science.py)"]
         L5["✅ API Contract (docs/api_specifications.md)"]
-        L2["Task 7: INT8 Post-Training Quantization (edge_opt/quantize_int8.py) — owner TBD (OD-3)"]
-        L3["Task 8: FP32 vs INT8 PSNR & Latency Benchmarks (edge_opt/benchmark_edge.py) — owner TBD (OD-3)"]
+        L2["✅ Task 7: INT8 Post-Training Quantization (edge_opt/quantize_int8.py)"]
+        L3["✅ Task 8: ONNX Runtime & Edge Benchmarks (edge_opt/benchmark_onnx.py)"]
     end
 
     subgraph Veni: Mobile Application
-        V1["Task 9: Flutter App Scaffolding (mobile/)"]
-        V2["Task 10: GCam Viewfinder UI & Exposure Slider"]
+        V1["✅ Task 9: Flutter App Scaffolding (mobile/)"]
+        V2["✅ Task 10: GCam Viewfinder UI & Exposure Slider (mobile/lib/)"]
         V3["Task 11: Android Camera2 SurfaceTexture Native Bridge"]
     end
 
