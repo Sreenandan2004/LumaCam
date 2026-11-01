@@ -74,4 +74,7 @@ All presentation visual assets are conveniently located in `project_presentation
 4. `training_curves.png`: 500-epoch Generator/Discriminator loss & validation PSNR (Slides 8, 13).
 5. `quality_metrics_comparison.png`: PSNR & SSIM vs literature baselines (Slide 13).
 6. `latency_throughput_benchmark.png`: 14.2ms / 70.4 FPS latency vs Diffusion models (Slides 3, 9, 14).
-7. `dark_raw.png`, `linear_iso.png`, `lumacam_enhanced.png`, `lumacam_isp.png`: Individual high-res crops for granular detail slides.
+7. `before_after_outdoor_night.png`: Outdoor night architectural 4-stage comparison with metric badges (Slide 11).
+8. `before_after_indoor_detail.png`: Indoor still-life fine-detail comparison with metric badges (Slide 11).
+9. `before_after_split_showcase.png`: Center-split draggable GCam before/after showcase (Slide 11).
+10. `dark_raw.png`, `linear_iso.png`, `lumacam_enhanced.png`, `lumacam_isp.png`: Individual high-res crops for granular detail slides.

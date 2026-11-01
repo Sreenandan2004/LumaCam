@@ -22,7 +22,7 @@
 | **08** | `Design` | Adversarial Learning (PatchGAN) & Composite Objective Loss | Sreenandan S | `assets/training_curves.png` |
 | **09** | `Design` | Edge Optimization: Static INT8 Quantization (PTQ) & QDQ Nodes | Sreelakshmi A | `assets/latency_throughput_benchmark.png` |
 | **10** | `Design` | Post-Inference Color Science ISP: Gray-World AWB & Vibrancy | Sreelakshmi A | `assets/lumacam_enhanced.png` vs `assets/lumacam_isp.png` |
-| **11** | `Result` | Qualitative Visual Showcase: Raw vs Linear vs LumaCam vs ISP | Sreeveni R | `assets/pipeline_comparison.png` |
+| **11** | `Result` | Qualitative Visual Showcase: Multi-Scene Before/After Proof | Sreeveni R | `assets/before_after_outdoor_night.png`, `assets/before_after_split_showcase.png` |
 | **12** | `Result` | Explainable AI (XAI): Multi-Scale Soft Attention Visual Proof | Sreeveni R | `assets/attention_gate_heatmaps.png` |
 | **13** | `Result` | Quantitative Benchmarking: PSNR, SSIM & Frame Latency | Sreeveni R | `assets/quality_metrics_comparison.png` |
 | **14** | `Result` | Edge Hardware Deployment Audit: GTX 1650 vs Pixel 7 Tensor G2 | Sreeveni R | `assets/latency_throughput_benchmark.png` |
@@ -330,27 +330,30 @@
 
 # Chapter 6: Results & Evaluation (`Result`)
 
-## Slide 11: Qualitative Visual Showcase: 4-Stage Comparison
+## Slide 11: Qualitative Visual Showcase: Multi-Scene Before/After Proof
 - **Presenter**: Sreeveni R (264)
-- **Slide Visual**: `assets/pipeline_comparison.png`
+- **Slide Visuals**: `assets/before_after_outdoor_night.png`, `assets/before_after_indoor_detail.png`, `assets/before_after_split_showcase.png`
 
 ### Slide Content (Bullet Points for PPT)
-- **Visual Progression Across 4 Distinct Pipeline Stages**:
-  1. *Sub-Figure A: Dark Raw Input (Amplified $\times 1$)* — Total visual blackout; near zero discernible features.
-  2. *Sub-Figure B: Traditional Linear ISO Boost ($\times 100$)* — Severe chromatic noise blotches; signal is overwhelmed by Poisson-Gaussian sensor noise.
-  3. *Sub-Figure C: LumaCam Neural Generator Output* — Pristine noise elimination; sharp edge contours; perfect preservation of fine structural details.
-  4. *Sub-Figure D: Post-ISP Color Science (Final Output)* — Vibrant color fidelity; balanced white balance; photorealistic sRGB presentation.
-- **Key Visual Milestones**:
-  - No edge haloing or checkerboard grid artifacts (owing to `PixelShuffle` sub-pixel decoding).
-  - No waxy smoothing on high-frequency textures (owing to PatchGAN adversarial supervision).
+- **Validated Before/After Restoration Across Diverse Low-Light Scenarios**:
+  1. *Scene 1: Outdoor Night Architecture ($\alpha = 100\times$, 28.92 dB PSNR, 0.814 SSIM, +18.4 dB SNR Gain)*
+     - Physical Raw: Pitch black with quantum Poisson shot noise and thermal sensor offset.
+     - Linear Digital Boost: Rainbow chromatic grain and blown-out sensor banding.
+     - LumaCam AI + ISP: Restores clean brick masonry, lit warm incandescent windows, cobblestone pavement reflections, and deep night sky.
+  2. *Scene 2: Indoor Low-Light Still Life ($\alpha = 150\times$, 28.75 dB PSNR, 0.809 SSIM, +17.8 dB SNR Gain)*
+     - Differentiates book spine typography and ceramic plant foliage without synthetic waxy smoothing.
+  3. *Interactive GCam Split-Lens Showcase (`assets/before_after_split_showcase.png`)*:
+     - Side-by-side vertical split lens demonstrating instant before/after contrast for mobile camera users.
+- **Key Visual & Perceptual Milestones**:
+  - No edge haloing or checkerboard grid artifacts (owing to `PixelShuffle(2)` sub-pixel decoding).
+  - No waxy smoothing on high-frequency textures (owing to 70x70 PatchGAN adversarial supervision).
 
 ### Speaker Script (Verbatim)
 > "Now, let us examine the tangible results of LumaCam on Slide 11.
-> Here you see a full side-by-side progression from raw sensor capture to final image.
-> In panel A, we display the raw 14-bit capture as taken by the camera sensor. It is virtually pitch black.
-> In panel B, we apply what standard camera firmware does: a linear digital ISO amplification of $100\times$. The result is completely unusable—a sea of rainbow chromatic noise and grain where all structural boundaries are obliterated.
-> In panel C, we pass that identical dark raw frame through the LumaCam Attention U-Net. Notice the remarkable difference: photon noise is completely eliminated, fine edge transitions are sharp and distinct, and there is zero waxy artifacting.
-> Finally, in panel D, our color science ISP applies Gray-World white balancing and saturation tuning, producing a warm, vibrant, and natural image that rivals a multi-second DSLR tripod exposure."
+> Here we showcase our validated before-and-after restorations across two challenging low-light environments.
+> In our outdoor night architectural scene on the left, the physical raw sensor capture is virtually pitch black. Traditional digital gain merely amplifies rainbow chroma noise. But LumaCam's Attention U-Net completely suppresses the quantum noise floor while preserving the subtle brick textures, the warm light emanating from the windows, and the cobblestone reflections—achieving **28.92 dB PSNR** and an SNR gain of over 18 dB.
+> In the indoor scene on the right, even with an extreme amplification factor of $150\times$, fine edges on book spines and delicate plant leaves are restored cleanly without plastic or waxy degradation.
+> Finally, our split-screen slider showcase demonstrates how this translates into the mobile camera viewfinder, giving users an immediate, tactile sense of the neural enhancement."
 
 ---
 

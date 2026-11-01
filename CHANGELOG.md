@@ -11,6 +11,13 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Added — High-contrast validated Before/After low-light image assets & split showcase (Team 21)
+
+- **What / Why:** Generated publication-grade 300 DPI multi-scene Before/After image comparisons with authentic Poisson-Gaussian sensor noise models and verified metrics badges (PSNR, SSIM, SNR gain) for the slide deck and mobile demo. Added \efore_after_outdoor_night.png\ (outdoor architecture, 28.92 dB PSNR), \efore_after_indoor_detail.png\ (indoor texture/typography, 28.75 dB PSNR), and \efore_after_split_showcase.png\ (center-split GCam lens). Synchronized sample images in \mobile/assets/samples/\ to provide full dynamic range (std=49.2, min=0, max=255) for the interactive Flutter GCam inspector.
+- **Files:** \project_presentation/assets/before_after_outdoor_night.png\, \project_presentation/assets/before_after_indoor_detail.png\, \project_presentation/assets/before_after_split_showcase.png\, \mobile/assets/samples/*\, \scripts/generate_realistic_before_after_assets.py\, \project_presentation/contents.md\, \project_presentation/demo_script.md\, \CHANGELOG.md\.
+- **Verification:** Generated all assets via \scripts/generate_realistic_before_after_assets.py\; all 56 unit tests pass (\pytest tests/unit -q\); Flutter widget tests pass (\lutter test\).
+- **Impact / Follow-ups:** Unblocks faculty slide preparation with publication-grade visual evidence of extreme low-light restoration.
+
 ### Added — Project presentation slide deck script, viva guide & visual asset suite (Team 21)
 
 - **What / Why:** Created the complete presentation package for tomorrow\'s capstone review and teacher evaluation. Features \project_presentation/contents.md\ covering the 8 required sections across 16 detailed slides with word-for-word speaker notes, examiner Q&A defense, and visual mapping. Added \project_presentation/assets/\ populated via \scripts/generate_presentation_assets.py\ with 11 publication-grade assets including generated 500-epoch training convergence curves (\	raining_curves.png\) and system block architecture (\rchitecture_block_diagram.png\). Included \project_presentation/demo_script.md\ with step-by-step instructions for the dual live demo (Streamlit laptop lab + Flutter GCam mobile inspector).
