@@ -1,0 +1,96 @@
+\chapter{CONCLUSION AND PHASE 2 PLAN}
+
+\section{Summary of Phase 1 Deliverables}
+Phase 1 of the LumaCam capstone project has established a rigorous theoretical foundation, an optimized neural architecture, and a functional mobile edge pipeline for interactive low-light computational photography:
+\begin{itemize}
+    \item \textbf{Raw Bayer Domain Architecture}: Designed and verified an Exposure-Conditioned Attention U-Net Generator operating directly on 4-channel Bayer quads ($H/2, W/2, 4$), preserving 14-bit dynamic range before demosaicing.
+    \item \textbf{Dynamic Latent Exposure Modulation}: Implemented Feature-wise Linear Modulation (FiLM) with zero-initialization identity pass-through, enabling smooth, artifact-free user exposure adjustment ($\alpha \in [1, 300]$).
+    \item \textbf{Noise Filtering via Attention Gates}: Demonstrated through Explainable AI (XAI) heatmaps that Spatial Attention Gates suppress underexposed sensor shot noise across skip connections.
+    \item \textbf{Edge Model Optimization}: Successfully quantized the generator to static INT8 precision, shrinking the model footprint by \textbf{$74.52\%$} (from $31.16\text{ MB}$ to $\mathbf{7.94\text{ MB}}$) with only $0.32\text{ dB}$ PSNR drop.
+    \item \textbf{Real-Time Mobile Performance}: Validated edge inference at \textbf{$24.8\text{ ms}$ per frame} ($\approx 40.3\text{ FPS}$) on the Google Pixel 7 Tensor G2 NPU, surpassing the $30\text{ FPS}$ viewfinder target.
+    \item \textbf{Native Camera2 Zero-Copy Pipeline}: Implemented native Kotlin \texttt{SurfaceTexture} streaming directly into Flutter with hardcoded HAL overrides to bypass Google Pixel OEM Night Sight.
+    \item \textbf{Software Quality}: Established a robust test harness with \textbf{56 automated unit and integration tests passing with a 100\% pass rate}.
+\end{itemize}
+
+\section{Team Work Breakdown Structure and Ownership}
+To ensure modularity and parallel velocity across the capstone timeline, the technical responsibilities were strictly apportioned across the three team members, as detailed in Table \ref{tab:team_wbs}.
+
+\begin{table*}[t]
+\centering
+\caption{Team Work Breakdown Structure and Ownership Matrix}
+\label{tab:team_wbs}
+\begin{tabular}{lp{4cm}p{9.2cm}}
+\toprule
+\textbf{Team Member} & \textbf{Role / Focus} & \textbf{Key Responsibilities \& Deliverables} \\ \midrule
+\textbf{Sreenandan S} \newline (SCT23CS063) & Lead Integrator, GPU Owner \& Core DL Architecture Lead & 
+$\bullet$ Bayer quad packing and pedestal subtraction pipeline (\texttt{raw\_processing.py}) \newline
+$\bullet$ Exposure-Conditioned Attention U-Net Generator design (\texttt{generator.py}) \newline
+$\bullet$ FiLM latent conditioning module implementation (\texttt{conditioning.py}) \newline
+$\bullet$ $70 \times 70$ PatchGAN Discriminator and composite loss engine (\texttt{composite\_loss.py}) \newline
+$\bullet$ PyTorch training pipeline and Kaggle P100 distributed relay notebook \newline
+$\bullet$ 56 automated unit and integration tests (\texttt{tests/unit/}) \\ \midrule
+
+\textbf{Sreelakshmi A} \newline (SCT23CS062) & Edge Optimization \& LiteRT Runtime Lead & 
+$\bullet$ Model graph translation via ONNX Opset 17 (\texttt{export\_onnx.py}) \newline
+$\bullet$ Representative calibration dataset extraction from low-light scenes \newline
+$\bullet$ Post-Training INT8 Quantization (PTQ) execution (\texttt{quantize\_int8.py}) \newline
+$\bullet$ Quantization degradation audit ($\Delta\text{PSNR} < 0.32\text{ dB}$, 74.5\% compression) \newline
+$\bullet$ Desktop DirectML and Google Pixel 7 Tensor G2 NPU latency benchmarking \newline
+$\bullet$ LiteRT C++/Kotlin inference delegate harness \\ \midrule
+
+\textbf{Sreeveni R} \newline (SCT23CS064) & Mobile Application \& Camera2 Lead & 
+$\bullet$ Pixel GCam-style Flutter mobile user interface (\texttt{mobile/lib/}) \newline
+$\bullet$ Real-time interactive exposure slider ($\alpha \in [1, 300]$) and HUD overlay \newline
+$\bullet$ Native Android Kotlin Camera2 controller (\texttt{Camera2RawController.kt}) \newline
+$\bullet$ Zero-copy \texttt{SurfaceTexture} hardware preview streaming (30 FPS target) \newline
+$\bullet$ Hardcoded HAL overrides to bypass Google Pixel OEM Night Sight \newline
+$\bullet$ Post-inference linear color science ISP (Gray-World AWB and saturation boost) \\ \bottomrule
+\end{tabular}
+\end{table*}
+
+\section{Phase 1 Milestone Accomplishment Matrix}
+All major Phase 1 deliverables scheduled for October--November 2026 have been successfully completed, as shown in Table \ref{tab:milestones}.
+
+\begin{table}[h]
+\centering
+\caption{Phase 1 Milestone Accomplishment Matrix}
+\label{tab:milestones}
+\begin{tabular}{llcc}
+\toprule
+\textbf{Milestone} & \textbf{Deliverable Description} & \textbf{Scheduled} & \textbf{Status} \\ \midrule
+M1.1 & Bayer Raw Quad Packing Pipeline & Week 1 & Completed \\
+M1.2 & Attention U-Net Architecture Design & Week 2 & Completed \\
+M1.3 & FiLM Latent Injection Module & Week 3 & Completed \\
+M1.4 & PatchGAN \& Composite Loss Engine & Week 4 & Completed \\
+M1.5 & Automated Unit Test Suite (56 Tests) & Week 5 & Completed \\
+M1.6 & ONNX Graph Export \& Parity Verification & Week 6 & Completed \\
+M1.7 & INT8 Post-Training Quantization (PTQ) & Week 7 & Completed \\
+M1.8 & Native Android Camera2 Zero-Copy Pipe & Week 8 & Completed \\
+M1.9 & Flutter GCam UI \& Safe Benchmark Mode & Week 9 & Completed \\
+M1.10 & Phase 1 Project Report \& Defense Kit & Week 10 & Completed \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\section{Risk Analysis and Mitigation Strategies}
+During Phase 1 engineering, two critical operational risks were identified and successfully resolved:
+\begin{enumerate}
+    \item \textbf{Classroom Lighting Washout During Live Evaluation}:
+    \begin{itemize}
+        \item \textit{Risk}: When demonstrating the app live to faculty evaluators in a normally lit classroom (300--500 lux), applying a low-light amplification factor ($\alpha = 100\times$) saturates the sensor into complete image washout.
+        \item \textit{Mitigation}: We engineered a dedicated \textbf{Safe Benchmark Demo Mode} (accessible via the green shield icon on the top bar). This mode allows 1-tap switching between live camera streaming and verified ground-truth night scenes, ensuring a fail-proof demonstration under any lighting conditions.
+    \end{itemize}
+    \item \textbf{OEM Night Sight Interference on Google Pixel 7}:
+    \begin{itemize}
+        \item \textit{Risk}: The native Android Camera2 HAL on Google Pixel devices silently enables proprietary Night Sight multi-frame stacking when detecting low scene brightness, contaminating raw sensor validation.
+        \item \textit{Mitigation}: In \texttt{Camera2RawController.kt}, we explicitly disabled scene modes, noise reduction, and software edge sharpening at the HAL level. An on-screen HUD badge (\texttt{PIXEL NIGHT SIGHT: BYPASSED}) verifies this override in real time.
+    \end{itemize}
+\end{enumerate}
+
+\section{Phase 2 Strategic Roadmap}
+In Phase 2 (Eighth Semester, 2027), the team will focus on the following milestones:
+\begin{enumerate}
+    \item \textbf{Extended Multi-Account Cloud Training}: Scale model training beyond 200+ epochs using the team's combined 90 free weekly Kaggle GPU hours to push validation PSNR to $\ge 29.5\text{ dB}$.
+    \item \textbf{On-Device Hardware Delegate Compilation}: Compile native \texttt{.tflite} flatbuffers into Qualcomm QNN and MediaTek NeuroPilot compiled binaries for cross-device commercial deployment.
+    \item \textbf{Burst Dynamic Range and Motion Deghosting}: Incorporate lightweight 3-frame optical flow alignment to combine short-exposure burst details without motion blur artifacts.
+    \item \textbf{Field User Studies and Exhibition}: Conduct extensive nocturnal outdoor field trials and battery consumption profiling on campus for final project defense and exhibition.
+\end{enumerate}

@@ -1,0 +1,112 @@
+\documentclass[12pt,a4paper]{report}
+
+% ---------------------------------------------------------
+% Essential Packages
+% ---------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx} % Times New Roman font standard
+\usepackage{geometry}
+\geometry{
+    a4paper,
+    left=35mm,
+    right=25mm,
+    top=25mm,
+    bottom=25mm
+}
+
+\usepackage{setspace}
+\onehalfspacing % KTU 1.5 Line Spacing requirement
+
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{cite}
+\usepackage{microtype}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{xcolor}
+
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=blue,
+    pdftitle={LumaCam: Edge-Native Adaptive Low-Light Computational Photography},
+    pdfauthor={Sreelakshmi A, Sreenandan S, Sreeveni R}
+}
+
+% ---------------------------------------------------------
+% Chapter and Section Heading Styling
+% ---------------------------------------------------------
+\titleformat{\chapter}[display]
+  {\normalfont\Large\bfseries\centering}{\chaptertitlename\ \thechapter}{15pt}{\LARGE}
+\titlespacing*{\chapter}{0pt}{20pt}{30pt}
+
+% ---------------------------------------------------------
+% Header & Footer Styling
+% ---------------------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\nouppercase{\leftmark}}
+\fancyhead[R]{\small LumaCam Phase-I}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyfoot[C]{\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0.4pt}
+}
+
+% ---------------------------------------------------------
+% Document Body
+% ---------------------------------------------------------
+\begin{document}
+
+% Front Matter (Roman Numerals)
+\pagenumbering{roman}
+
+\input{titlepage}
+\input{certificate}
+\input{declaration}
+\input{acknowledgement}
+\input{abstract}
+
+\newpage
+\tableofcontents
+
+\newpage
+\listoffigures
+
+\newpage
+\listoftables
+
+\newpage
+% Main Matter (Arabic Numerals)
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\input{chapters/chapter1}
+\input{chapters/chapter2}
+\input{chapters/chapter3}
+\input{chapters/chapter4}
+\input{chapters/chapter5}
+\input{chapters/chapter6}
+
+% ---------------------------------------------------------
+% Bibliography
+% ---------------------------------------------------------
+\newpage
+\addcontentsline{toc}{chapter}{References}
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

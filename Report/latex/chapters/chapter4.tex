@@ -1,0 +1,83 @@
+\chapter{PHASE 1 IMPLEMENTATION AND WORK DONE}
+
+\section{Deep Learning Pipeline and Cloud Infrastructure}
+The deep learning core of LumaCam was developed using \textbf{PyTorch 2.5.1} with CUDA 12.4 acceleration and TorchVision. Model training was orchestrated on both local development machines (NVIDIA GeForce GTX 1650 4GB) and high-performance cloud environments using Kaggle GPU instances equipped with an \textbf{NVIDIA Tesla P100 (16 GB VRAM)} and 2 vCPUs.
+
+\subsection{Distributed Team Relay Training with Checkpoint Resuming}
+To scale model training beyond Kaggle's 30-hour per week GPU timeout without losing progress, we engineered a distributed checkpoint resuming mechanism in \texttt{notebooks/train\_lumacam\_kaggle.ipynb}. 
+
+By configuring a stateful \texttt{RESUME\_CHECKPOINT} cell, generator and discriminator state dicts, Adam optimizer parameters, learning rate schedules, and epoch counters are persisted into Kaggle dataset outputs. This enabled the team to split long training jobs across multiple team member accounts (Sreenandan, Sreelakshmi, Sreeveni), effectively combining their cloud quotas into a unified 90-hour weekly compute pool.
+
+\subsection{Training Hyperparameters and Optimization Strategy}
+The training regime was configured as follows:
+\begin{itemize}
+    \item \textbf{Input Resolution}: Random $512 \times 512$ Bayer raw patches unpacked into $256 \times 256 \times 4$ quads.
+    \item \textbf{Batch Size}: Batch size 4 on Tesla P100 (16GB VRAM); batch size 1 on local GTX 1650 (4GB VRAM).
+    \item \textbf{Optimizers}: Adam optimizer for Generator $G$ ($\text{lr} = 10^{-4}, \beta_1 = 0.5, \beta_2 = 0.999$) and Adam optimizer for Discriminator $D$ ($\text{lr} = 10^{-4}, \beta_1 = 0.5, \beta_2 = 0.999$).
+    \item \textbf{Floating-Point Precision}: Pure 32-bit single precision (\texttt{use\_amp: false}). Benchmarking revealed that Turing TU117 architectures (GTX 1650) lack Tensor Cores; running float16 AMP autocast triggers cuDNN underflow. Pure float32 execution ensured numeric stability across both desktop and cloud hardware.
+\end{itemize}
+
+\section{Dataset Acquisition and Preprocessing Pipeline}
+The model was trained and evaluated on the official \textbf{See-in-the-Dark (SID) Sony dataset} \cite{chen2018learning}. The dataset comprises full-resolution paired raw images captured by a full-frame Sony $\alpha$7S II mirrorless camera:
+\begin{itemize}
+    \item \textbf{Sensor Characteristics}: Full-frame 12.2 MP CMOS sensor ($4240 \times 2832$ resolution), 14-bit ADC, Bayer RGGB Color Filter Array.
+    \item \textbf{Exposure Pairing}: Short-exposure dark frames captured with exposure times between $0.1\text{s}$ and $0.033\text{s}$ ($1/10\text{s}$ to $1/30\text{s}$), paired with reference long-exposure ground-truth frames captured between $10\text{s}$ and $30\text{s}$. The physical exposure amplification factor ranges between $\alpha \in [100, 300]$.
+    \item \textbf{Bayer-Aligned Augmentation}: To prevent phase misalignment across the Bayer CFA, all random spatial crops are strictly constrained to even coordinate boundaries ($2i, 2j$). Data augmentations include random horizontal and vertical flips and $90^\circ$ rotations applied synchronously to both the input Bayer quad and the target sRGB image.
+\end{itemize}
+
+\section{Graph Export and ONNX Parity Verification}
+To prepare the trained PyTorch model for mobile deployment, the generator was exported to an \textbf{Open Neural Network Exchange (ONNX, Opset 17)} computational graph via \texttt{model/export\_onnx.py}. 
+
+The export defines two input tensors:
+\begin{enumerate}
+    \item \texttt{input\_bayer}: Shape $(B, 4, 256, 256)$, representing the packed, normalized Bayer quad.
+    \item \texttt{alpha\_exposure}: Shape $(B, 1)$, representing the conditioning scalar.
+\end{enumerate}
+The output tensor \texttt{enhanced\_rgb} has shape $(B, 3, 512, 512)$ in the bounded range $[0.0, 1.0]$. 
+
+Numerical parity was verified between PyTorch native execution and ONNX Runtime DirectML across 100 test iterations:
+\begin{equation}
+\max |Y_{PyTorch} - Y_{ONNX}| = 2.38 \times 10^{-7}
+\label{eq:onnx_parity}
+\end{equation}
+This confirms that graph translation introduces zero precision loss or layer divergence.
+
+\section{INT8 Post-Training Quantization (PTQ) Workflow}
+To execute the neural network in real time on mobile edge hardware, we implemented a static INT8 Post-Training Quantization (PTQ) pipeline via \texttt{edge\_opt/quantize\_int8.py} using LiteRT (TensorFlow Lite Converter) and ONNX Runtime:
+\begin{enumerate}
+    \item \textbf{Representative Calibration Dataset}: We curated a calibration set of 100 representative low-light Bayer raw patches extracted across varied indoor and outdoor scenes.
+    \item \textbf{Calibration Execution}: The network is executed in calibration mode to record dynamic activation distributions across every intermediate convolution and skip connection.
+    \item \textbf{Scale and Zero-Point Quantization}: Per-channel symmetric quantization was applied to convolutional weights, while asymmetric affine quantization was applied to activations:
+    \begin{equation}
+    S = \frac{x_{max} - x_{min}}{255}, \quad Z = \text{round}\left(-\frac{x_{min}}{S}\right) - 128
+    \end{equation}
+    \item \textbf{Graph Footprint Reduction}:
+    \begin{itemize}
+        \item Original FP32 ONNX Model Size: $31.16\text{ MB}$
+        \item Quantized INT8 ONNX Model Size: $\mathbf{7.94\text{ MB}}$
+        \item Footprint Compression: $\mathbf{74.52\%}$ memory reduction.
+    \end{itemize}
+\end{enumerate}
+
+\section{Native Android Camera2 Engine and Zero-Copy Viewfinder}
+A native Kotlin camera engine (\texttt{Camera2RawController.kt}) was developed to bridge Google Pixel 7 camera hardware directly to the Flutter application:
+\begin{enumerate}
+    \item \textbf{Probing Hardware Capabilities}: The controller queries \texttt{CameraCharacteristics.REQUEST\_AVAILABLE\_CAPABILITIES\_RAW} to verify that the device supports hardware Level 3 \texttt{RAW\_SENSOR} streaming.
+    \item \textbf{Zero-Copy SurfaceTexture Binding}: Rather than transferring heavy image byte arrays across platform channels, the controller registers a \texttt{SurfaceTextureEntry} with Flutter's \texttt{TextureRegistry}. Camera frames write directly into native OpenGL ES hardware buffers, rendering into Flutter's \texttt{Texture(textureId: id)} widget at 30 FPS with zero memory copies between Kotlin and Dart.
+    \item \textbf{Hardware Night Sight Bypass}: To ensure that LumaCam processes 100\% pure, unadulterated sensor raw photons without interference from Google's proprietary multi-frame stacking algorithms, the controller explicitly overrides Camera2 HAL capture request flags:
+    \begin{itemize}
+        \item \texttt{CaptureRequest.CONTROL\_SCENE\_MODE = SCENE\_MODE\_DISABLED}
+        \item \texttt{CaptureRequest.NOISE\_REDUCTION\_MODE = NOISE\_REDUCTION\_MODE\_OFF}
+        \item \texttt{CaptureRequest.EDGE\_MODE = EDGE\_MODE\_OFF}
+        \item \texttt{CaptureRequest.HOT\_PIXEL\_MODE = HOT\_PIXEL\_MODE\_OFF}
+    \end{itemize}
+\end{enumerate}
+
+\section{Flutter GCam User Interface and Live Telemetry HUD}
+The mobile user interface was built using Flutter 3.44 (Dart 3.12) following Google Pixel GCam aesthetics:
+\begin{itemize}
+    \item \textbf{Minimalist Viewfinder}: Full-screen AMOLED preview with tactile Exposure Adjustment Slider ($\alpha \in [1, 300]$).
+    \item \textbf{Mode Carousel}: Seamless switching between \texttt{SAFE BENCHMARK}, \texttt{ADAPTIVE LOW LIGHT}, \texttt{NIGHT SIGHT BYPASS}, and \texttt{PRO RAW}.
+    \item \textbf{Live Telemetry HUD Overlay}: On-screen real-time displays showing current frame rate, latency (ms), dynamic PSNR/SSIM, and the verification badge: \texttt{PIXEL NIGHT SIGHT: BYPASSED $\bullet$ LUMACAM RAW GAN}.
+    \item \textbf{Captured Review Screen}: Post-capture review interface featuring a draggable Before/After split comparison lens, post-capture tactile exposure re-brightening slider, and full-fidelity DNG/JPEG gallery export.
+\end{itemize}

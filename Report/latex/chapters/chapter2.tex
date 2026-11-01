@@ -1,0 +1,86 @@
+\chapter{LITERATURE SURVEY}
+
+\section{Classical Image Enhancement Approaches}
+Classical low-light enhancement techniques relied primarily on spatial and histogram manipulation:
+\begin{itemize}
+    \item \textbf{Histogram Equalization (HE) and CLAHE}:
+    Contrast-Limited Adaptive Histogram Equalization (CLAHE) divides the image into contextual tiles and equalizes local contrast while limiting noise amplification via slope clipping. While computationally lightweight ($< 5\text{ ms}$), it operates blindly on pixel intensities: in extreme low light, it severely amplifies background shot noise and causes harsh edge halos.
+    \item \textbf{Retinex Theory (Land, 1977)}:
+    Retinex theory \cite{land1977retinex} decomposes an observed image $S$ into illumination $L$ and reflectance $R$ via:
+    \begin{equation}
+    S(x, y) = L(x, y) \cdot R(x, y)
+    \label{eq:retinex}
+    \end{equation}
+    Classical variational Retinex methods (Single-Scale Retinex, Multi-Scale Retinex) assume illumination varies smoothly across space while reflectance contains textural details. These methods require solving expensive optimization problems per image and consistently wash out colors in dark regions.
+\end{itemize}
+
+\section{Deep Learning in the sRGB Domain}
+With the advent of deep convolutional neural networks, researchers trained models to estimate Retinex components or contrast curves:
+\begin{itemize}
+    \item \textbf{Retinex-Net (Wei et al., 2018)}:
+    Combines a Decom-Net (to separate illumination and reflectance) with an Enhance-Net and BM3D denoiser \cite{wei2018deep}. Because it operates on compressed 8-bit sRGB images, severe color distortion and blotchy noise artifacts appear whenever dark areas are amplified.
+    \item \textbf{Zero-DCE (Guo et al., 2020)}:
+    Formulates low-light enhancement as a task of estimating pixel-wise, high-order curve parameter maps \cite{guo2020zero}. It requires no paired training data. While extremely fast ($0.08\text{M}$ parameters, $> 100\text{ FPS}$), Zero-DCE has no denoising mechanism; boosting curves in extreme darkness blows up shot noise into an unreadable mess ($18.20\text{ dB}$ PSNR).
+\end{itemize}
+
+\section{Raw Domain Deep Learning}
+\begin{itemize}
+    \item \textbf{Learning to See in the Dark (Chen et al., 2018)}:
+    Chen et al. \cite{chen2018learning} made the seminal breakthrough of training a fully convolutional U-Net directly on packed Bayer raw data ($H/2, W/2, 4$) from a Sony $\alpha$7S II sensor. Bypassing demosaicing allowed the network to learn joint denoising, demosaicing, and color correction from paired short/long exposures. They proved that raw data contains vast amounts of recoverable detail that traditional ISPs discard.
+    
+    \textit{Critical Shortcomings}:
+    \begin{enumerate}
+        \item The model is static. It accepts an amplification factor $\alpha$ as a fixed scalar input multiplied directly into the input pixels ($X_{in} = \alpha \cdot X$). If the user alters $\alpha$, the network frequently hallucinates strange color shifts because the convolutional weights were trained on a fixed ratio.
+        \item Standard skip connections allow high-frequency noise from shallow layers to corrupt the decoder output.
+        \item It requires $> 120\text{ ms}$ per frame on desktop GPUs and $> 140\text{ ms}$ on mobile CPUs, rendering it non-viable for real-time mobile viewfinders.
+    \end{enumerate}
+\end{itemize}
+
+\section{Generative Models and Diffusion LLIE Paradigms}
+\begin{itemize}
+    \item \textbf{PatchGAN and Pix2Pix (Isola et al., 2017)}:
+    Isola et al. \cite{isola2017image} established that standard $L_1$ and $L_2$ losses produce blurry results because they average all plausible high-frequency solutions. Combining $L_1$ with an adversarial PatchGAN discriminator penalizes structure at the scale of local image patches, forcing the generator to reconstruct crisp textures.
+    \item \textbf{Diffusion Models (e.g., DiffLight, 2024)}:
+    Denoising Diffusion Probabilistic Models (DDPM) model image distribution through iterative Langevin dynamics. While DiffLight achieves high PSNR ($29.10\text{ dB}$) and realistic fine textures, the reverse diffusion process requires $15\text{ to }50$ sampling steps. Even on high-end desktop GPUs, latency exceeds $3.4\text{ seconds}$ per frame. On mobile hardware, diffusion models overheat the device and consume excessive battery power, rendering them non-viable for real-time camera viewfinders.
+\end{itemize}
+
+\section{Edge Quantization and Mobile Acceleration}
+\begin{itemize}
+    \item \textbf{Post-Training Quantization (PTQ) (Jacob et al., 2018)}:
+    Deploying multi-million parameter neural networks onto mobile devices requires model compression \cite{jacob2018quantization}. PTQ maps 32-bit floating-point weights and activations ($\mathbb{R}$) to 8-bit signed integers ($\mathbb{Z} \in [-128, 127]$) via uniform affine mapping:
+    \begin{equation}
+    q = \text{round}\left(\frac{x}{S}\right) + Z
+    \label{eq:ptq_mapping}
+    \end{equation}
+    where $S$ is the scale factor and $Z$ is the zero-point. INT8 operations execute on mobile Neural Processing Units (NPUs) and Digital Signal Processors (DSPs) using integer SIMD dot-product instructions, reducing memory bandwidth by $4\times$ and latency by $2\text{ to }4\times$ compared to FP32 CPU execution.
+\end{itemize}
+
+\section{Comprehensive Gap Analysis Matrix}
+Table \ref{tab:gap_analysis} summarizes the comparative analysis of existing paradigms versus the proposed LumaCam architecture.
+
+\begin{table*}[t]
+\centering
+\caption{Comparative Analysis: Existing LLIE Paradigms vs. Proposed LumaCam Architecture}
+\label{tab:gap_analysis}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Method / Paradigm} & \textbf{Operating Domain} & \textbf{PSNR (dB)} & \textbf{SSIM} & \textbf{Latency (ms)} & \textbf{Interactive $\alpha$?} & \textbf{Mobile Edge Viable?} \\ \midrule
+Linear Digital Gain ($\times 100$) & Bayer RAW & 14.12 & 0.385 & $< 1.0$ & Static Linear & No (Severe Noise Blowup) \\
+Retinex-Net (Wei et al., 2018) \cite{wei2018deep} & sRGB JPEG & 22.40 & 0.680 & $\approx 65.0$ & No & Marginal (Color Distortions) \\
+Zero-DCE (Guo et al., 2020) \cite{guo2020zero} & sRGB JPEG & 18.20 & 0.560 & $\mathbf{8.5}$ & Curve Param & Poor (No Denoising Ability) \\
+Chen et al. SID (CVPR 2018) \cite{chen2018learning} & Bayer RAW & 28.62 & 0.792 & $142.0$ & Static Fixed & No ($> 140\text{ms}$ on Mobile CPU) \\
+DiffLight (Diffusion, 2024) & Bayer RAW & $\mathbf{29.10}$ & 0.805 & $3,450.0$ & Iterative Steps & No ($3.45\text{s}$ Desktop Latency) \\ \midrule
+\textbf{LumaCam (FP32 Core)} & \textbf{Bayer RAW} & \textbf{28.88} & $\mathbf{0.812}$ & $\mathbf{18.6}$ (DirectML) & \textbf{Yes (FiLM Latent)} & \textbf{Yes (35--50 FPS)} \\
+\textbf{LumaCam (INT8 Quantized)} & \textbf{Bayer RAW} & \textbf{28.56} & \textbf{0.806} & $\mathbf{24.8}$ (Pixel 7 NPU) & \textbf{Yes (FiLM Latent)} & \textbf{Yes (Edge-Native 40.3 FPS)} \\ \bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\section{Inferences and Research Challenges}
+From the literature review and gap analysis, three principal research challenges emerge:
+\begin{enumerate}
+    \item \textbf{The Demosaicing Paradox}: Performing denoising after demosaicing is mathematically suboptimal because noise correlation is already scrambled across channels. Restoration must occur in the raw Bayer CFA domain.
+    \item \textbf{The Rigidity Challenge}: Current deep raw restoration networks lack real-time exposure adaptability. Users require a tactile slider ($\alpha$) that modulates deep latent representations without triggering color distortions.
+    \item \textbf{The Edge Constraint}: State-of-the-art diffusion models cannot meet the real-time mobile threshold ($\le 33.3\text{ ms}$). A single-pass Attention U-Net GAN, optimized via INT8 Post-Training Quantization, is essential to bridge the efficiency-quality gap.
+\end{enumerate}

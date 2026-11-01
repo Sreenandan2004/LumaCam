@@ -1,0 +1,89 @@
+\chapter{INTRODUCTION}
+
+\section{Background and Context}
+Digital photography has become the principal medium through which modern society captures, communicates, and archives visual information. Smartphone cameras now account for over $90\%$ of all consumer photographs worldwide. However, while modern semiconductor sensors perform exceptionally well in brightly lit outdoor scenes, capturing imagery in low-light environments ($< 1\text{ lux}$, such as nocturnal outdoor architecture, dimly lit classrooms, or unlit interiors) remains one of the most persistent bottlenecks in imaging science.
+
+In extreme darkness, camera sensors receive very few photons during the short exposure window of a handheld photograph. If the camera simply amplifies the analog or digital gain (ISO), the image is obliterated by severe grain, colorful chromatic noise, and banding artifacts. To overcome these physical hardware boundaries, modern smartphone manufacturers rely on \textbf{computational photography}---the use of digital computation and artificial intelligence rather than purely optical and analog mechanisms to create the final image.
+
+\section{Physics of Low-Light Sensor Acquisition}
+To understand why low-light photography is fundamentally difficult, one must examine the physical noise model governing Complementary Metal-Oxide-Semiconductor (CMOS) image sensors. The total noise in an acquired raw digital image can be rigorously modeled by a two-component Poisson-Gaussian distribution:
+
+\begin{equation}
+I(p) = \alpha \cdot N_{photon}(p) + N_{read}(p)
+\label{eq:noise_model}
+\end{equation}
+
+where:
+\begin{enumerate}
+    \item \textbf{Photon Shot Noise ($N_{photon} \sim \mathcal{P}(\lambda)$)}: Light arrives at the sensor as discrete packets of electromagnetic energy (photons). The arrival of photons over time is a Poisson process with mean arrival rate $\lambda$. The fundamental physical property of Poisson statistics is that variance equals the mean ($\sigma^2 = \lambda$). Therefore, the Signal-to-Noise Ratio (SNR) is:
+    \begin{equation}
+    \text{SNR} = \frac{\lambda}{\sqrt{\lambda}} = \sqrt{\lambda}
+    \label{eq:snr_derivation}
+    \end{equation}
+    In bright sunlight ($\lambda = 10,000\text{ photons}$), $\text{SNR} = 100$ ($40\text{ dB}$), yielding pristine images. In extreme low light ($\lambda = 4\text{ photons}$), $\text{SNR} = \sqrt{4} = 2$ ($6\text{ dB}$), meaning the noise magnitude is fully half of the physical signal itself!
+    \item \textbf{Dark Current and Thermal Noise ($N_{thermal} \sim \mathcal{N}(0, \sigma_d^2)$)}: Spontaneous thermal excitation in the silicon substrate generates electrons even in total darkness, worsening during long sensor reads or warm device temperatures.
+    \item \textbf{Readout and ADC Quantization Noise ($N_{read} \sim \mathcal{N}(0, \sigma_r^2)$)}: Small voltage fluctuations in the column amplifiers and rounding errors during Analog-to-Digital Conversion (ADC) introduce an additive Gaussian noise floor that overwhelms weak physical signals.
+\end{enumerate}
+
+\section{The Image Signal Processor (ISP) Breakdown}
+In a standard smartphone, raw pixel voltages from the sensor do not immediately become a viewable JPEG image. They must pass through a multi-stage hardware pipeline known as the \textbf{Image Signal Processor (ISP)}:
+
+\begin{equation*}
+\text{CMOS RAW} \xrightarrow{\text{Black Subtraction}} \xrightarrow{\text{Demosaic}} \xrightarrow{\text{White Balance}} \xrightarrow{\text{Denoise}} \xrightarrow{\text{Tone Map}} \xrightarrow{\text{Gamma}} \text{sRGB JPEG}
+\end{equation*}
+
+In bright light, this pipeline produces vibrant pictures. However, in low light, the traditional ISP experiences a catastrophic failure sequence:
+\begin{itemize}
+    \item \textbf{The Demosaicing Trap}: Standard camera sensors use a Bayer Color Filter Array (CFA) where each pixel only captures Red, Green, or Blue. Demosaicing algorithms (e.g., bilinear interpolation, Adaptive Homogeneity-Directed) estimate missing color channels by interpolating values from adjacent pixels. When the input contains high Poisson-Gaussian noise, demosaicing averages corrupt noise spikes across color channels, transforming fine pixel-level shot noise into large, blotchy chromatic patches.
+    \item \textbf{Dynamic Range Truncation}: Standard sRGB encoding compresses the 12-bit or 14-bit linear sensor data into an 8-bit non-linear color space ($[0, 255]$). Low-light shadow details are rounded down to digital zero (crushed blacks), destroying signal components forever.
+    \item \textbf{Unnatural Smoothing}: Post-demosaic spatial filters (bilateral filters, wavelet denoisers) cannot distinguish between low-contrast real textures and demosaiced noise blotches, producing the notorious ``waxy face'' artifact where all skin texture, hair, and fabric weave are erased.
+\end{itemize}
+
+\section{State-of-the-Art Deep Learning LLIE Paradigms}
+Over the past five years, research in Low-Light Image Enhancement (LLIE) has shifted to deep neural networks:
+\begin{enumerate}
+    \item \textbf{sRGB-Domain CNNs (e.g., Retinex-Net, Zero-DCE)}:
+    These methods attempt to enhance low-light 8-bit JPEG images \cite{wei2018deep, guo2020zero}. Because shadow information has already been clipped by the ISP, these networks simply stretch compressed digital noise, resulting in extreme noise amplification, halo artifacts around edges, and severe color distortions.
+    \item \textbf{Raw-Domain Convolutional Networks (e.g., Chen et al. SID)}:
+    Chen et al. \cite{chen2018learning} pioneered processing raw Bayer sensor data directly using a standard U-Net \cite{ronneberger2015u}. Operating before demosaicing preserved 14-bit dynamic range and achieved unprecedented PSNR ($> 28\text{ dB}$). However, SID suffers from two critical flaws:
+    \begin{itemize}
+        \item \textbf{Static Brightness}: The network produces a fixed, non-adjustable brightness output. The user has no slider or tactile control to adjust the mood or exposure compensation.
+        \item \textbf{Computational Heaviness}: The original architecture requires over $120\text{ ms}$ on desktop GPUs, making live 30 FPS mobile viewfinder streaming impossible.
+    \end{itemize}
+    \item \textbf{Generative Diffusion Models (e.g., DiffLight)}:
+    Diffusion models use stochastic iterative denoising to hallucinate rich, realistic textures. While visually striking, reverse diffusion requires $15\text{ to }50$ iterative forward passes through a heavy U-Net ($> 40\text{M}$ parameters), taking $2.0\text{ to }4.0\text{ seconds}$ per frame. They are fundamentally incompatible with real-time viewfinder applications.
+\end{enumerate}
+
+\section{Motivation and Rationale for LumaCam}
+There exists a glaring \textbf{efficiency-quality gap} in modern computational photography:
+\begin{itemize}
+    \item High-end multi-frame burst pipelines (e.g., Google Pixel Night Sight \cite{hasinoff2016burst}, Apple Deep Fusion) produce great photos, but rely on proprietary, closed-source Qualcomm/Google silicon pipelines that stack $9\text{ to }15$ frames over a 3-second hold period. They cannot stream live video at 30 FPS, and any hand tremor creates motion ghosting.
+    \item Single-pass deep learning models offer the potential for zero-delay capture, but are either too slow (diffusion models), structurally rigid (static raw U-Nets), or degrade quality by operating after demosaicing (sRGB networks).
+\end{itemize}
+
+To solve this, we require a \textbf{single-pass, edge-native neural architecture} that operates directly on 14-bit Bayer raw data, accepts interactive user exposure guidance in real time, and executes under $33\text{ ms}$ on mobile neural accelerators.
+
+\section{Key Technical Innovations and Contributions}
+The core contributions of LumaCam in Phase I include:
+\begin{enumerate}
+    \item \textbf{Exposure-Conditioned Latent FiLM Injection}:
+    Introduction of Feature-wise Linear Modulation (FiLM) \cite{perez2018film} at the bottleneck of an Attention U-Net. This allows an interactive exposure scalar ($\alpha \in [1, 300]$) to continuously scale and shift deep latent features, giving users instant, smooth exposure compensation.
+    \item \textbf{Spatial Attention Gated Skip Connections}:
+    Integration of Spatial Attention Gates (AG) \cite{oktay2018attention} that use coarse decoder gating signals to filter out underexposed shot noise from fine encoder skip connections, preventing noise leakage into the final reconstructed image.
+    \item \textbf{Sub-Pixel Reconstruction \& 70x70 PatchGAN Objective}:
+    Implementation of a sub-pixel convolution (PixelShuffle \cite{shi2016real}) reconstruction head paired with a composite loss function ($L_1 + \text{MS-SSIM} + \text{cGAN}$ PatchGAN \cite{isola2017image, wang2003multiscale}) that eliminates checkerboard artifacts and preserves fine, crisp textural detail.
+    \item \textbf{Post-Training INT8 Quantization (PTQ) \& Edge Acceleration}:
+    Complete optimization and quantization of the PyTorch model into an INT8 LiteRT/ONNX graph \cite{jacob2018quantization}, shrinking model size by $74.52\%$ (to $7.94\text{ MB}$) and achieving $24.8\text{ ms}$ inference on the Google Pixel 7 Tensor G2 NPU.
+    \item \textbf{Zero-Copy Native Android Camera2 Bridge \& Google Night Sight Bypass}:
+    A native Kotlin/C++ engine that registers hardware \texttt{SurfaceTexture} buffers with Flutter, streaming live 30 FPS viewfinders while explicitly setting Camera2 HAL flags to bypass Google Pixel OEM Night Sight and software sharpening.
+\end{enumerate}
+
+\section{Organization of the Report}
+The remainder of this report is organized as follows:
+\begin{itemize}
+    \item \textbf{Chapter 2 (Literature Survey)} provides a critical literature review of image enhancement paradigms and presents a detailed Gap Analysis Matrix.
+    \item \textbf{Chapter 3 (System Design \& Architecture)} establishes the formal mathematical problem statement and details the system architecture, mathematical derivations for FiLM, Attention Gates, PixelShuffle, and composite loss formulations.
+    \item \textbf{Chapter 4 (Phase 1 Implementation \& Work Done)} describes the engineering implementation across PyTorch training, INT8 quantization, Android Camera2 zero-copy pipelines, and Flutter GCam UI.
+    \item \textbf{Chapter 5 (Preliminary Results \& Discussion)} presents extensive experimental evaluation, benchmark tables, latency profiling, and visual quality comparisons.
+    \item \textbf{Chapter 6 (Conclusion \& Phase 2 Plan)} outlines project management, the 3-member work breakdown structure, and the strategic roadmap for Phase 2.
+\end{itemize}

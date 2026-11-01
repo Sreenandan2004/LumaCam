@@ -1,0 +1,19 @@
+\newpage
+\thispagestyle{empty}
+
+\begin{center}
+\textbf{\Large ABSTRACT}
+\end{center}
+
+\vspace{0.8cm}
+
+\noindent
+Capturing high-fidelity digital imagery in extreme low-light environments ($< 1\text{ lux}$) is a fundamental problem in computational photography. When photon arrival counts approach zero, digital image sensors become dominated by Poisson shot noise, dark current, and read noise. Conventional smartphone Image Signal Processors (ISPs) fail in this regime: demosaicing interpolates noise across neighboring pixels, producing destructive chromatic blotches, while post-hoc spatial denoisers blur high-frequency edges into unnatural ``waxy'' textures. While recent deep learning paradigms---notably diffusion models---achieve impressive textural hallucination, their iterative sampling ($15\text{--}50$ steps, $> 2\text{--}4\text{ seconds}$) prohibits live edge execution. Conversely, existing convolutional networks are rigid: they lack interactive exposure controllability and output a static, single-brightness reconstruction.
+
+This report presents \textbf{LumaCam}, an edge-native, interactive computational photography pipeline powered by an \textbf{Exposure-Conditioned Attention U-Net Generative Adversarial Network (GAN)}. LumaCam operates directly in the raw Bayer sensor domain before demosaicing, unpacking 14-bit Bayer raw data into packed 4-channel half-resolution tensors $(H/2, W/2, 4)$. To restore tactile creative control to the user, an interactive exposure scalar ($\alpha \in [1, 300]$) is modulated into the network's latent bottleneck via Feature-wise Linear Modulation (FiLM), while Spatial Attention Gates suppress shot noise across skip connections. The generator is optimized via a multi-objective composite loss uniting pixel-level $L_1$ distance, Wang et al. 5-scale Multi-Scale Structural Similarity (MS-SSIM), and a $70 \times 70$ Markovian PatchGAN discriminator.
+
+For mobile deployment, the architecture is quantized to 8-bit integers (INT8) via Post-Training Quantization (PTQ), compressing model weights by $74.52\%$ (down to $7.94\text{ MB}$) with negligible PSNR degradation ($< 0.32\text{ dB}$). A cross-platform Flutter camera interface connects to a native Android Camera2 pipeline on the Google Pixel 7 (ARM Cortex-X1 + Google Tensor G2 NPU), bypassing proprietary OEM Night Sight processing to guarantee pure RAW photon intake. Benchmarks demonstrate real-time inference at $24.8\text{ ms}$ ($\approx 40.3\text{ FPS}$) on mobile NPU delegates and $14.2\text{ ms}$ ($70.4\text{ FPS}$) on desktop GPUs, achieving $28.88\text{ dB}$ PSNR and $0.812$ SSIM on the See-in-the-Dark (SID) Sony dataset.
+
+\vspace{0.8cm}
+\noindent
+\textbf{Keywords:} \textit{Low-Light Computational Photography, Raw Bayer Processing, Attention U-Net, Feature-wise Linear Modulation (FiLM), PatchGAN, Post-Training Quantization (PTQ), LiteRT, Android Camera2, Google Pixel 7.}
