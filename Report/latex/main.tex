@@ -42,10 +42,18 @@
 }
 
 % ---------------------------------------------------------
-% Chapter and Section Heading Styling
+% Orphan and Widow Line Suppression (Prevents 1-2 line spillover pages)
+% ---------------------------------------------------------
+\widowpenalty=10000
+\clubpenalty=10000
+\displaywidowpenalty=10000
+\raggedbottom
+
+% ---------------------------------------------------------
+% Chapter and Section Heading Styling (Left-Aligned per Template)
 % ---------------------------------------------------------
 \titleformat{\chapter}[display]
-  {\normalfont\Large\bfseries\centering}{\chaptertitlename\ \thechapter}{15pt}{\LARGE}
+  {\normalfont\Large\bfseries\raggedright}{\chaptertitlename\ \thechapter}{15pt}{\LARGE}
 \titlespacing*{\chapter}{0pt}{20pt}{30pt}
 
 % ---------------------------------------------------------
@@ -88,6 +96,8 @@
 
 \newpage
 \listoftables
+
+\input{abbreviations}
 
 \newpage
 % Main Matter (Arabic Numerals)
