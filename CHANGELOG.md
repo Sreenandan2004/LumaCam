@@ -11,6 +11,13 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Style — Title page typography baselineskip and bottom department anchoring (Team 21)
+
+- **What / Why:** Adjusted Title page layout in 	itlepage.tex: configured explicit 24pt baseline leading for the 18pt title font (\fontsize{18pt}{24pt}\selectfont) with a natural two-line wrap to eliminate line-cramping, and introduced \vfill after the SCTCE college logo to anchor the Department, College, and Date block cleanly towards the bottom margin.
+- **Files:** Report/latex/titlepage.tex, Report/lumacam_phase1_report.zip, CHANGELOG.md.
+- **Verification:** Verified balanced braces and rebuilt ZIP archive.
+- **Impact / Follow-ups:** Produces an aesthetically balanced Title page on Overleaf.
+
 ### Fix — List of abbreviations line spacing and eliminated blank page (Team 21)
 
 - **What / Why:** Fixed the List of Abbreviations table: standardized row line spacing to 0.6cm across all 29 entries (\\[0.6cm]), switched to longtable in abbreviations.tex and added \usepackage{longtable} in main.tex to allow clean multi-page pagination. Eliminated the redundant \newpage above \chapter*{LIST OF ABBREVIATIONS} that was causing an unwanted blank page between List of Tables and Abbreviations.
