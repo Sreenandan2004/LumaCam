@@ -35,7 +35,7 @@ from model.postprocess.color_science import apply_color_pipeline
 
 st.set_page_config(
     page_title="LumaCam | Low-Light AI Camera Demo",
-    page_icon="📷",
+    page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -82,14 +82,14 @@ def load_lumacam_model(checkpoint_path_str: str):
 
 
 def main():
-    st.title("📷 LumaCam: Edge-Native Adaptive Low-Light Computational Photography")
+    st.title("LumaCam: Edge-Native Adaptive Low-Light Computational Photography")
     st.markdown(
         "**Team 21 (SCTCE)** | Capstone Project Guided by **Asst. Prof. Arya Sreedhar**  \n"
         "*Exposure-Conditioned Attention U-Net GAN with FiLM Conditioning & Edge-Native Color Science.*"
     )
 
     # Sidebar Controls
-    st.sidebar.header("⚙️ Camera & Model Controls")
+    st.sidebar.header("Camera & Model Controls")
 
     ckpt_default = "checkpoints/lumacam_best.pt"
     ckpt_path = st.sidebar.text_input("Checkpoint Path", value=ckpt_default)
@@ -97,7 +97,7 @@ def main():
     with st.spinner("Initializing neural engine..."):
         generator, device, is_loaded, meta = load_lumacam_model(ckpt_path)
 
-    status_icon = "🟢" if is_loaded else "🟡"
+    status_icon = "[ACTIVE]" if is_loaded else "[PENDING]"
     st.sidebar.markdown(f"**Engine Status**: {status_icon} Loaded on `{device}`")
     if device.type == "cuda":
         st.sidebar.caption(f"Hardware: {torch.cuda.get_device_name(0)}")
@@ -105,7 +105,7 @@ def main():
         st.sidebar.caption(f"Checkpoint Epoch: {meta['epoch']} | Val PSNR: {meta.get('val_psnr', 0.0):.2f} dB")
 
     st.sidebar.markdown("---")
-    st.sidebar.subheader("🎚️ User Exposure Slider (α)")
+    st.sidebar.subheader("User Exposure Slider (α)")
     alpha_val = st.sidebar.slider(
         "Exposure Amplification (α)",
         min_value=1.0,
@@ -116,7 +116,7 @@ def main():
     )
 
     st.sidebar.markdown("---")
-    st.sidebar.subheader("🎨 Post-Inference Color Science")
+    st.sidebar.subheader("Post-Inference Color Science")
     enable_color_science = st.sidebar.checkbox(
         "Enable Color Science (AWB & Saturation)",
         value=True,
@@ -126,7 +126,7 @@ def main():
     sat_factor = st.sidebar.slider("Saturation Multiplier", 0.8, 1.5, 1.15, 0.05) if enable_color_science else 1.0
 
     st.sidebar.markdown("---")
-    st.sidebar.subheader("🧪 Input Source")
+    st.sidebar.subheader("Input Source")
     input_mode = st.sidebar.radio(
         "Select Image Source",
         options=["Synthetic Poisson-Gaussian Sensor Simulation", "Upload Custom Image / Crop"],
@@ -203,8 +203,17 @@ def main():
     final_np = final_t[0].permute(1, 2, 0).cpu().numpy()
     gt_np = gt_tensor.permute(1, 2, 0).numpy()
 
+    # Match resolution and channels for accurate linear gain metric
+    if linear_boost.shape[0] != gt_np.shape[0] or linear_boost.shape[1] != gt_np.shape[1]:
+        scale_y = gt_np.shape[0] // linear_boost.shape[0]
+        scale_x = gt_np.shape[1] // linear_boost.shape[1]
+        linear_boost_full = np.repeat(np.repeat(linear_boost, scale_y, axis=0), scale_x, axis=1)
+    else:
+        linear_boost_full = linear_boost
+    linear_boost_3ch = np.repeat(linear_boost_full[:, :, None], 3, axis=2)
+
     # Metrics computation
-    mse_linear = float(np.mean((linear_boost[:, :, None] - gt_np) ** 2))
+    mse_linear = float(np.mean((linear_boost_3ch - gt_np) ** 2))
     psnr_linear = 20.0 * np.log10(1.0 / np.sqrt(mse_linear)) if mse_linear > 1e-10 else 100.0
 
     mse_luma = float(np.mean((final_np - gt_np) ** 2))
@@ -222,13 +231,13 @@ def main():
         st.metric("LumaCam Enhanced PSNR", f"{psnr_luma:.2f} dB", delta=f"{psnr_luma - psnr_linear:+.2f} dB")
 
     st.markdown("---")
-    st.subheader("🖼️ Computational Photography Pipeline Comparison")
+    st.subheader("Computational Photography Pipeline Comparison")
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.image(raw_dark, caption=f"1. Physical Sensor Bayer (α = {alpha_val:.1f}x)", clamp=True, use_container_width=True)
     with col2:
-        st.image(linear_boost, caption="2. Traditional Linear ISO Gain (Noise Blow-up)", clamp=True, use_container_width=True)
+        st.image(linear_boost_3ch, caption="2. Traditional Linear ISO Gain (Noise Blow-up)", clamp=True, use_container_width=True)
     with col3:
         st.image(enhanced_raw_np, caption="3. Attention U-Net GAN Output (Pre-Color)", clamp=True, use_container_width=True)
     with col4:
@@ -236,7 +245,7 @@ def main():
 
     # Attention Gate Explainability Section
     st.markdown("---")
-    st.subheader("🔍 Explainable AI: Spatial Attention Gate Noise Suppression")
+    st.subheader("Explainable AI: Spatial Attention Gate Noise Suppression")
     st.markdown(
         "Spatial Attention Gates on skip connections compute soft attention maps $\\alpha_{att} \\in [0, 1]$ "
         "conditioned on coarser gating features from the decoder. This filters out severe Poisson photon noise in dark areas "
@@ -257,7 +266,7 @@ def main():
 
     st.sidebar.markdown("---")
     st.sidebar.info(
-        "💡 **Presentation Tip**: Slide exposure α to demonstrate how the FiLM layer adaptively balances highlights and shadows in a single forward pass without re-demosaicing!"
+        "**Presentation Tip**: Slide exposure α to demonstrate how the FiLM layer adaptively balances highlights and shadows in a single forward pass without re-demosaicing!"
     )
 
 

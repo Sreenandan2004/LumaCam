@@ -11,6 +11,13 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Fix — Streamlit broadcasting dimension mismatch and emoji removal (Team 21)
+
+- **What / Why:** Resolved ValueError: operands could not be broadcast together with shapes (256,256,1) (512,512,3) during PSNR/MSE linear gain computation in pp.py by upsampling the packed Bayer mean to full ground-truth resolution and expanding across 3 RGB channels (linear_boost_3ch). Stripped all emoji glyphs from pp.py headers, status badges, and sidebar controls per presentation styling guidelines.
+- **Files:** pp.py, CHANGELOG.md.
+- **Verification:** Verified dry-run execution with DummySIDDataset returning valid MSE (0.0759) and PSNR (11.20 dB); verified zero unicode emoji characters remain.
+- **Impact / Follow-ups:** Unblocks error-free execution of streamlit run app.py for live demo evaluations.
+
 ### Fix — Symmetrical horizontal page centering and table textwidth auto-scaling (Team 21)
 
 - **What / Why:** Resolved right-shift and table overflow cutoffs (as seen in Table 6.1 Team Ownership Matrix):
