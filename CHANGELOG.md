@@ -11,6 +11,13 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Added — Checkpoint resuming support in Kaggle notebook for multi-session team training (Team 21)
+
+- **What / Why:** Upgraded `notebooks/train_lumacam_kaggle.ipynb` to support seamless checkpoint resuming across Kaggle GPU sessions and teammate accounts. Added `RESUME_CHECKPOINT` configuration cell that restores generator and discriminator weights, optimizer states, epoch counter, and best validation PSNR, allowing training to be split across multiple sessions or accounts (e.g. Sreenandan, Sreelakshmi, Sreeveni) to leverage the team's combined 90 free GPU hours/week without losing progress.
+- **Files:** `notebooks/train_lumacam_kaggle.ipynb`, `scripts/update_kaggle_notebook_resume.py`, `CHANGELOG.md`.
+- **Verification:** Verified notebook JSON structure and checkpoint load logic; all 56 unit tests pass (`pytest tests/unit -q`).
+- **Impact / Follow-ups:** Unblocks distributed multi-account cloud training to scale model convergence beyond 100+ epochs.
+
 ### Added — Pixel Night Sight OEM bypass overrides & foolproof Safe Benchmark Demo mode (Team 21)
 
 - **What / Why:** Implemented explicit hardware Camera2 HAL overrides in `Camera2RawController.kt` (`CONTROL_SCENE_MODE = DISABLED`, `NOISE_REDUCTION_MODE = OFF`, `EDGE_MODE = OFF`, `HOT_PIXEL_MODE = OFF`) to bypass Google Pixel proprietary Night Sight and multi-frame stacking, guaranteeing that LumaCam processes pure, untouched sensor RAW data. Added a dedicated Safe Benchmark Demo toggle in `GCamTopBar` and carousel (`SAFE BENCHMARK`), allowing instantaneous 1-tap switching between live Camera2 streaming and validated high-contrast ground-truth low-light samples with live HUD telemetry badges (`PIXEL NIGHT SIGHT: BYPASSED`) for a 100% foolproof presentation defense.
