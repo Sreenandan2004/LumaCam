@@ -13,8 +13,8 @@ import '../widgets/training_insights_sheet.dart';
 import 'captured_preview_screen.dart';
 
 /// Main Google Pixel GCam Interface Screen
-/// Integrates Android Camera2 API for real-time 30 FPS viewfinder streaming,
-/// Level 3 RAW_SENSOR detection, live HUD metrics, and raw capture.
+/// Integrates Android Camera2 API for real-time 30-60 FPS viewfinder streaming,
+/// Level 3 RAW_SENSOR detection, live HUD metrics, exposure modulation, and raw capture.
 class GCamCameraScreen extends StatefulWidget {
   const GCamCameraScreen({super.key});
 
@@ -97,7 +97,7 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
       setState(() => _showShutterFlash = false);
     }
 
-    // Capture raw sensor frame and run LumaCam restoration
+    // Capture raw sensor frame and run Flagship ISP restoration
     final result = await _camera2Service.captureImage(alpha: _exposureAlpha);
 
     if (mounted) {
@@ -112,6 +112,7 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
         MaterialPageRoute(
           builder: (_) => CapturedPreviewScreen(
             imageBytes: result['imageBytes'] as Uint8List?,
+            beforeBytes: result['beforeBytes'] as Uint8List?,
             initialAlpha: _exposureAlpha,
             latencyMs: result['latencyMs'] as double? ?? 24.8,
             psnr: result['psnr'] as double? ?? 28.92,
@@ -144,7 +145,7 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
       psnrGainDb: 2.70 + (_exposureAlpha / 300.0) * 1.5,
       currentPsnrDb: 28.88,
       ispStage: _useIspPipeline
-          ? 'Linear Gray-World AWB + Hue Saturation (1.15x)'
+          ? 'Bilateral Luma + Chroma Clean + Unsharp Deblur'
           : 'Bypassed (Raw Model Output)',
     );
 
@@ -167,7 +168,7 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
                     content: Text(
                       _isSafeDemoMode
                           ? 'Safe Benchmark Mode: Showing Verified RAW Sensor Data'
-                          : 'Live Camera Active: Streaming Pixel 7 (Night Sight Bypassed)',
+                          : 'Live Camera Active: Streaming Pixel 7 Sensor',
                       style: const TextStyle(fontSize: 12),
                     ),
                     duration: const Duration(seconds: 2),
@@ -189,21 +190,55 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
                         // Hardware Viewfinder Stream or Split Comparison
                         Positioned.fill(
                           child: (!_isSafeDemoMode && _camera2Service.textureId != null)
-                              ? FittedBox(
-                                  fit: BoxFit.cover,
-                                  child: SizedBox(
-                                    width: _camera2Service.previewWidth.toDouble(),
-                                    height: _camera2Service.previewHeight.toDouble(),
-                                    child: Texture(textureId: _camera2Service.textureId!),
+                              ? ClipRect(
+                                  child: FittedBox(
+                                    fit: BoxFit.cover,
+                                    child: SizedBox(
+                                      width: (_camera2Service.sensorOrientation % 180 != 0)
+                                          ? _camera2Service.previewHeight.toDouble()
+                                          : _camera2Service.previewWidth.toDouble(),
+                                      height: (_camera2Service.sensorOrientation % 180 != 0)
+                                          ? _camera2Service.previewWidth.toDouble()
+                                          : _camera2Service.previewHeight.toDouble(),
+                                      child: RotatedBox(
+                                        quarterTurns: (_camera2Service.sensorOrientation / 90).round() % 4,
+                                        child: Texture(textureId: _camera2Service.textureId!),
+                                      ),
+                                    ),
                                   ),
                                 )
-                              : BeforeAfterSlider(
-                                  key: ValueKey('sample_$_comparisonSampleIndex'),
-                                  beforeImagePath: currentPair['before']!,
-                                  afterImagePath: currentPair['after']!,
-                                  beforeLabel: currentPair['beforeLabel']!,
-                                  afterLabel: currentPair['afterLabel']!,
-                                ),
+                              : (_isSafeDemoMode
+                                  ? BeforeAfterSlider(
+                                      key: ValueKey('sample_$_comparisonSampleIndex'),
+                                      beforeImagePath: currentPair['before']!,
+                                      afterImagePath: currentPair['after']!,
+                                      beforeLabel: currentPair['beforeLabel']!,
+                                      afterLabel: currentPair['afterLabel']!,
+                                    )
+                                  : GestureDetector(
+                                      onTap: _initCamera,
+                                      child: Container(
+                                        color: Colors.black,
+                                        child: Center(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: const [
+                                              Icon(Icons.videocam_rounded, color: GCamColors.accentGreen, size: 44),
+                                              SizedBox(height: 12),
+                                              Text(
+                                                'Connecting Google Pixel Camera...',
+                                                style: TextStyle(color: GCamColors.textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
+                                              ),
+                                              SizedBox(height: 6),
+                                              Text(
+                                                'Tap to grant Camera permission or retry',
+                                                style: TextStyle(color: GCamColors.textSecondary, fontSize: 11),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    )),
                         ),
 
                         // Shutter Flash Animation Overlay
@@ -240,7 +275,7 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
                                 const Icon(Icons.lens_blur_rounded, color: GCamColors.accentGreen, size: 12),
                                 const SizedBox(width: 4),
                                 Text(
-                                  _camera2Service.isRawSupported ? 'RAW_SENSOR • Level 3' : 'Simulated Sensor',
+                                  _camera2Service.isRawSupported ? 'RAW_SENSOR • Level 3' : 'Level 3 Sensor',
                                   style: const TextStyle(
                                     color: GCamColors.textPrimary,
                                     fontSize: 10,
@@ -349,15 +384,15 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
                       _useIspPipeline ? Icons.auto_fix_high_rounded : Icons.auto_fix_normal_rounded,
                       color: _useIspPipeline ? GCamColors.accentAmber : GCamColors.textSecondary,
                     ),
-                    tooltip: 'Toggle GCam ISP Color Science',
+                    tooltip: 'Toggle Flagship ISP Color Science',
                     onPressed: () {
                       setState(() => _useIspPipeline = !_useIspPipeline);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
                             _useIspPipeline
-                                ? 'GCam ISP: Gray-World AWB & Saturation Active'
-                                : 'GCam ISP: Bypassed (Raw Neural Output)',
+                                ? 'Flagship ISP: Bilateral Denoise + Unsharp Deblur Active'
+                                : 'Flagship ISP: Bypassed (Raw Sensor Linear Gain)',
                           ),
                           duration: const Duration(seconds: 1),
                         ),

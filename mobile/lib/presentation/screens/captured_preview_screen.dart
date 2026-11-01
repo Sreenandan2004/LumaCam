@@ -8,6 +8,7 @@ import '../widgets/before_after_slider.dart';
 /// and dynamic post-capture exposure adjustment.
 class CapturedPreviewScreen extends StatefulWidget {
   final Uint8List? imageBytes;
+  final Uint8List? beforeBytes;
   final double initialAlpha;
   final double latencyMs;
   final double psnr;
@@ -17,6 +18,7 @@ class CapturedPreviewScreen extends StatefulWidget {
   const CapturedPreviewScreen({
     super.key,
     this.imageBytes,
+    this.beforeBytes,
     required this.initialAlpha,
     required this.latencyMs,
     required this.psnr,
@@ -52,7 +54,7 @@ class _CapturedPreviewScreenState extends State<CapturedPreviewScreen> {
               Icon(Icons.check_circle_rounded, color: GCamColors.accentGreen, size: 18),
               SizedBox(width: 8),
               Text(
-                'Saved to Gallery: DCIM/Camera/LumaCam_RAW.dng',
+                'Saved to Gallery: DCIM/Camera/LumaCam_Pixel_ISP.jpg',
                 style: TextStyle(color: GCamColors.textPrimary, fontSize: 12),
               ),
             ],
@@ -65,7 +67,6 @@ class _CapturedPreviewScreenState extends State<CapturedPreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Dynamic brightness factor for preview slider
     final brightnessScale = (_currentAlpha / 100.0).clamp(0.6, 2.0);
 
     return Scaffold(
@@ -85,10 +86,12 @@ class _CapturedPreviewScreenState extends State<CapturedPreviewScreen> {
                   Center(
                     child: _showSplitComparison
                         ? BeforeAfterSlider(
+                            beforeImageBytes: widget.beforeBytes,
+                            afterImageBytes: widget.imageBytes,
                             beforeImagePath: 'assets/samples/dark_raw.png',
                             afterImagePath: 'assets/samples/lumacam_isp.png',
-                            beforeLabel: 'RAW SENSOR (DARK)',
-                            afterLabel: 'LUMACAM ENHANCED',
+                            beforeLabel: 'SENSOR RAW (DARK)',
+                            afterLabel: 'LUMACAM + FLAGSHIP ISP',
                           )
                         : ColorFiltered(
                             colorFilter: ColorFilter.matrix([
@@ -141,7 +144,7 @@ class _CapturedPreviewScreenState extends State<CapturedPreviewScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Latency: ${widget.latencyMs.toStringAsFixed(1)} ms | Sensor: ${widget.isRaw ? "Bayer 14-bit RAW" : "Standard"}',
+                            'Latency: ${widget.latencyMs.toStringAsFixed(1)} ms | ISP: Bilateral + Unsharp Deblur',
                             style: const TextStyle(
                               color: GCamColors.textSecondary,
                               fontSize: 10,
@@ -152,33 +155,54 @@ class _CapturedPreviewScreenState extends State<CapturedPreviewScreen> {
                     ),
                   ),
 
-                  // Split view toggle button
+                  // Post-Capture Exposure Slider (Right Edge)
                   Positioned(
-                    top: 16,
                     right: 16,
-                    child: IconButton(
-                      icon: Icon(
-                        _showSplitComparison ? Icons.view_carousel_rounded : Icons.splitscreen_rounded,
-                        color: GCamColors.textPrimary,
-                      ),
-                      tooltip: _showSplitComparison ? 'Show Full Enhanced' : 'Show Split Lens',
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.black.withValues(alpha: 0.7),
-                      ),
-                      onPressed: () {
-                        setState(() => _showSplitComparison = !_showSplitComparison);
-                      },
+                    bottom: 24,
+                    top: 80,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.wb_sunny_rounded, color: GCamColors.accentYellow, size: 16),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: RotatedBox(
+                            quarterTurns: 3,
+                            child: SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                trackHeight: 3,
+                                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                                activeTrackColor: GCamColors.accentYellow,
+                                inactiveTrackColor: Colors.white24,
+                                thumbColor: Colors.white,
+                              ),
+                              child: Slider(
+                                value: _currentAlpha,
+                                min: 10.0,
+                                max: 300.0,
+                                onChanged: (val) => setState(() => _currentAlpha = val),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${_currentAlpha.toInt()}x',
+                          style: const TextStyle(
+                            color: GCamColors.textPrimary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
 
-            // Bottom Post-Processing Panel
-            _buildPostProcessPanel(),
-
-            // Bottom Action Bar (Retake, Save, Share)
-            _buildActionBar(context),
+            // Bottom Control Bar
+            _buildBottomBar(context),
           ],
         ),
       ),
@@ -186,151 +210,91 @@ class _CapturedPreviewScreenState extends State<CapturedPreviewScreen> {
   }
 
   Widget _buildTopBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, color: GCamColors.textPrimary),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: GCamColors.textPrimary),
             onPressed: () => Navigator.pop(context),
           ),
-          Column(
-            children: [
-              const Text(
-                'LumaCam Result Inspector',
-                style: TextStyle(
-                  color: GCamColors.textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: GCamColors.surfaceElevated,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _showSplitComparison ? Icons.compare_rounded : Icons.photo_rounded,
+                  color: GCamColors.accentGreen,
+                  size: 16,
                 ),
-              ),
-              Text(
-                'Exposure Factor: ${_currentAlpha.round()}x Gain',
-                style: const TextStyle(
-                  color: GCamColors.accentYellow,
-                  fontSize: 11,
+                const SizedBox(width: 6),
+                Text(
+                  _showSplitComparison ? 'Split Comparison' : 'Enhanced Photo',
+                  style: const TextStyle(
+                    color: GCamColors.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           IconButton(
-            icon: const Icon(Icons.info_outline_rounded, color: GCamColors.textSecondary),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  backgroundColor: GCamColors.surfaceElevated,
-                  content: Text(
-                    'Reconstructed from 4-channel packed Bayer raw data (RGGB) using Attention U-Net GAN.',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                ),
-              );
-            },
+            icon: Icon(
+              _showSplitComparison ? Icons.view_sidebar_rounded : Icons.splitscreen_rounded,
+              color: GCamColors.textPrimary,
+            ),
+            tooltip: 'Toggle Split Comparison',
+            onPressed: () => setState(() => _showSplitComparison = !_showSplitComparison),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPostProcessPanel() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: GCamColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: GCamColors.borderSubtle),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: const [
-                  Icon(Icons.wb_sunny_rounded, color: GCamColors.accentYellow, size: 16),
-                  SizedBox(width: 8),
-                  Text(
-                    'Post-Capture Exposure Adjustment (α)',
-                    style: TextStyle(
-                      color: GCamColors.textPrimary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                '${_currentAlpha.round()}x',
-                style: const TextStyle(
-                  color: GCamColors.accentYellow,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          SliderTheme(
-            data: SliderThemeData(
-              activeTrackColor: GCamColors.accentYellow,
-              inactiveTrackColor: GCamColors.borderSubtle,
-              thumbColor: GCamColors.accentYellow,
-              overlayColor: GCamColors.accentYellow.withValues(alpha: 0.2),
-              trackHeight: 3.0,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7.0),
-            ),
-            child: Slider(
-              min: 10.0,
-              max: 300.0,
-              value: _currentAlpha,
-              onChanged: (val) {
-                setState(() => _currentAlpha = val);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionBar(BuildContext context) {
+  Widget _buildBottomBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      color: Colors.black,
+      decoration: const BoxDecoration(
+        color: GCamColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          // Retake button
+          // Retake Button
           OutlinedButton.icon(
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: const Text('Retake'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: GCamColors.textSecondary,
-              side: const BorderSide(color: GCamColors.borderSubtle),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              side: const BorderSide(color: Colors.white24),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
+            icon: const Icon(Icons.refresh_rounded, color: GCamColors.textPrimary, size: 18),
+            label: const Text('Retake', style: TextStyle(color: GCamColors.textPrimary)),
             onPressed: () => Navigator.pop(context),
           ),
 
-          // Save button
+          // Save / Export Button
           ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: GCamColors.accentGreen,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+            ),
             icon: _isSaving
                 ? const SizedBox(
                     width: 16,
                     height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                    child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
                   )
-                : const Icon(Icons.save_alt_rounded, size: 18),
-            label: Text(_isSaving ? 'Saving...' : 'Save DNG'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: GCamColors.accentYellow,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            ),
+                : const Icon(Icons.file_download_rounded, size: 18),
+            label: Text(_isSaving ? 'Saving...' : 'Save Photo', style: const TextStyle(fontWeight: FontWeight.bold)),
             onPressed: _isSaving ? null : _handleSave,
           ),
         ],

@@ -1,17 +1,23 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../core/constants/gcam_colors.dart';
 
 /// Interactive draggable comparison slider between before and after image states.
+/// Supports both pre-rendered assets and real-time in-memory captured frames (Uint8List).
 class BeforeAfterSlider extends StatefulWidget {
   final String beforeImagePath;
   final String afterImagePath;
+  final Uint8List? beforeImageBytes;
+  final Uint8List? afterImageBytes;
   final String beforeLabel;
   final String afterLabel;
 
   const BeforeAfterSlider({
     super.key,
-    required this.beforeImagePath,
-    required this.afterImagePath,
+    this.beforeImagePath = 'assets/samples/dark_raw.png',
+    this.afterImagePath = 'assets/samples/lumacam_isp.png',
+    this.beforeImageBytes,
+    this.afterImageBytes,
     this.beforeLabel = 'RAW SENSOR (DARK)',
     this.afterLabel = 'LUMACAM AI + ISP',
   });
@@ -22,6 +28,45 @@ class BeforeAfterSlider extends StatefulWidget {
 
 class _BeforeAfterSliderState extends State<BeforeAfterSlider> {
   double _splitRatio = 0.5; // Range: 0.0 to 1.0
+
+  Widget _buildAfterImage() {
+    if (widget.afterImageBytes != null) {
+      return Image.memory(
+        widget.afterImageBytes!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder('After Image'),
+      );
+    }
+    return Image.asset(
+      widget.afterImagePath,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => _buildPlaceholder('After Image'),
+    );
+  }
+
+  Widget _buildBeforeImage() {
+    if (widget.beforeImageBytes != null) {
+      return Image.memory(
+        widget.beforeImageBytes!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _buildPlaceholder('Before Image'),
+      );
+    }
+    return Image.asset(
+      widget.beforeImagePath,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => _buildPlaceholder('Before Image'),
+    );
+  }
+
+  Widget _buildPlaceholder(String text) {
+    return Container(
+      color: GCamColors.surfaceElevated,
+      child: Center(
+        child: Text(text, style: const TextStyle(color: GCamColors.textSecondary)),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,31 +84,13 @@ class _BeforeAfterSliderState extends State<BeforeAfterSlider> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // 1. Bottom Layer: After Image (LumaCam Enhanced + ISP)
-              Image.asset(
-                widget.afterImagePath,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: GCamColors.surfaceElevated,
-                  child: const Center(
-                    child: Text('After Image', style: TextStyle(color: GCamColors.textSecondary)),
-                  ),
-                ),
-              ),
+              // 1. Bottom Layer: After Image (LumaCam Enhanced + Flagship ISP)
+              _buildAfterImage(),
 
               // 2. Top Layer: Before Image (Raw Dark / Noisy) clipped by splitRatio
               ClipRect(
                 clipper: _HorizontalSplitClipper(_splitRatio),
-                child: Image.asset(
-                  widget.beforeImagePath,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.black,
-                    child: const Center(
-                      child: Text('Before Image', style: TextStyle(color: GCamColors.textSecondary)),
-                    ),
-                  ),
-                ),
+                child: _buildBeforeImage(),
               ),
 
               // 3. Vertical Divider Line

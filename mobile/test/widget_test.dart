@@ -58,9 +58,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify navigation to Captured Preview Screen
-    expect(find.text('LumaCam Result Inspector'), findsOneWidget);
-    expect(find.textContaining('Post-Capture Exposure Adjustment'), findsOneWidget);
-    expect(find.text('Save DNG'), findsOneWidget);
+    expect(find.text('Split Comparison'), findsOneWidget);
+    expect(find.text('Save Photo'), findsOneWidget);
     expect(find.text('Retake'), findsOneWidget);
 
     // Tap Retake to pop back to main viewfinder

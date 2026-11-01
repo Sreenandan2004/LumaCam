@@ -11,6 +11,7 @@ class Camera2Service {
   int? _textureId;
   int _previewWidth = 1280;
   int _previewHeight = 720;
+  int _sensorOrientation = 90;
   bool _isRawSupported = false;
   bool _isInitialized = false;
   String _sensorName = 'Camera2 Bayer RGGB';
@@ -19,6 +20,7 @@ class Camera2Service {
   int? get textureId => _textureId;
   int get previewWidth => _previewWidth;
   int get previewHeight => _previewHeight;
+  int get sensorOrientation => _sensorOrientation;
   bool get isRawSupported => _isRawSupported;
   bool get isInitialized => _isInitialized;
   String get sensorName => _sensorName;
@@ -42,8 +44,9 @@ class Camera2Service {
         _textureId = res['textureId'] as int?;
         _previewWidth = res['previewWidth'] as int? ?? 1280;
         _previewHeight = res['previewHeight'] as int? ?? 720;
+        _sensorOrientation = res['sensorOrientation'] as int? ?? 90;
         _isRawSupported = res['isRawSupported'] as bool? ?? false;
-        _sensorName = res['sensorName'] as String? ?? 'Google Pixel 7 (Level 3)';
+        _sensorName = res['sensorName'] as String? ?? 'Google Pixel 7 (Level 3 RAW_SENSOR)';
         _currentFps = (res['fps'] as num?)?.toDouble() ?? 30.0;
         _isInitialized = true;
         return true;
@@ -74,7 +77,7 @@ class Camera2Service {
     }
   }
 
-  /// Captures a frame, runs neural Bayer restoration, and returns result payload
+  /// Captures a sensor frame, runs Flagship ISP restoration, and returns result payload
   Future<Map<String, dynamic>> captureImage({required double alpha}) async {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android && _textureId != null) {
       try {
@@ -82,6 +85,7 @@ class Camera2Service {
         if (res != null) {
           return {
             'imageBytes': res['imageBytes'] as Uint8List?,
+            'beforeBytes': res['beforeBytes'] as Uint8List?,
             'width': res['width'] as int? ?? _previewWidth,
             'height': res['height'] as int? ?? _previewHeight,
             'alpha': (res['alpha'] as num?)?.toDouble() ?? alpha,
@@ -89,6 +93,7 @@ class Camera2Service {
             'psnr': (res['psnr'] as num?)?.toDouble() ?? 28.92,
             'ssim': (res['ssim'] as num?)?.toDouble() ?? 0.814,
             'isRaw': res['isRaw'] as bool? ?? true,
+            'sensorOrientation': res['sensorOrientation'] as int? ?? _sensorOrientation,
           };
         }
       } catch (e) {
@@ -100,6 +105,7 @@ class Camera2Service {
     await Future.delayed(const Duration(milliseconds: 350));
     return {
       'imageBytes': null, // Will use sample asset
+      'beforeBytes': null,
       'width': _previewWidth,
       'height': _previewHeight,
       'alpha': alpha,
@@ -107,6 +113,7 @@ class Camera2Service {
       'psnr': 28.92,
       'ssim': 0.814,
       'isRaw': true,
+      'sensorOrientation': 90,
     };
   }
 
