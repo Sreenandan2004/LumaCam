@@ -11,6 +11,13 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Fix — List of abbreviations line spacing and eliminated blank page (Team 21)
+
+- **What / Why:** Fixed the List of Abbreviations table: standardized row line spacing to 0.6cm across all 29 entries (\\[0.6cm]), switched to longtable in abbreviations.tex and added \usepackage{longtable} in main.tex to allow clean multi-page pagination. Eliminated the redundant \newpage above \chapter*{LIST OF ABBREVIATIONS} that was causing an unwanted blank page between List of Tables and Abbreviations.
+- **Files:** Report/latex/main.tex, Report/latex/abbreviations.tex, Report/lumacam_phase1_report.zip, CHANGELOG.md.
+- **Verification:** Verified syntax across all 13 .tex files with zero errors; rebuilt ZIP package.
+- **Impact / Follow-ups:** Removes the blank page and standardizes abbreviation spacing on Overleaf.
+
 ### Fix — Declaration page student names vertical spacing and alignment (Team 21)
 
 - **What / Why:** Replaced excessive 1.2cm inter-name gap with compact 0.3cm spacing (\[0.3cm]) in declaration.tex and replaced hardcoded vertical spacing with fill, anchoring the student names block cleanly and cohesively in the bottom-right corner opposite Date and Place.
