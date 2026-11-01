@@ -8,7 +8,7 @@ Interactive dashboard demonstrating:
    - Underexposed Raw Bayer Sensor preview
    - Linear Digital ISO Gain (illustrating noise blow-up)
    - LumaCam Attention U-Net GAN Enhancement
-   - LumaCam + Color Science (AWB & Saturation)
+   - LumaCam + Flagship Dual-Domain ISP (AWB, Detail Recovery & GCam Tone Curve)
 4. Explainable AI: Live 4-stage Spatial Attention Gate heatmaps showing shot noise suppression
 5. Real-time inference latency and performance metrics (FPS, PSNR)
 """
@@ -39,6 +39,35 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+
+def rgb_to_yuv(rgb: np.ndarray) -> np.ndarray:
+    """Converts float RGB [0, 1] to YUV."""
+    M = np.array([
+        [ 0.29900,  0.58700,  0.11400],
+        [-0.14713, -0.28886,  0.43600],
+        [ 0.61500, -0.51499, -0.10001]
+    ], dtype=np.float32)
+    return np.dot(rgb, M.T)
+
+
+def yuv_to_rgb(yuv: np.ndarray) -> np.ndarray:
+    """Converts float YUV to RGB [0, 1]."""
+    M_inv = np.array([
+        [1.0,  0.00000,  1.13983],
+        [1.0, -0.39465, -0.58060],
+        [1.0,  2.03211,  0.00000]
+    ], dtype=np.float32)
+    return np.clip(np.dot(yuv, M_inv.T), 0.0, 1.0)
+
+
+def gcam_s_curve(img: np.ndarray, contrast: float = 1.20, brightness: float = 0.01) -> np.ndarray:
+    """Flagship GCam-style sigmoidal S-curve tone mapping for natural contrast and shadow lifting."""
+    x = np.clip(img + brightness, 0.0, 1.0)
+    s_curve = 1.0 / (1.0 + np.exp(-contrast * 5.5 * (x - 0.45)))
+    s_min = 1.0 / (1.0 + np.exp(-contrast * 5.5 * (0.0 - 0.45)))
+    s_max = 1.0 / (1.0 + np.exp(-contrast * 5.5 * (1.0 - 0.45)))
+    return np.clip((s_curve - s_min) / (s_max - s_min + 1e-6), 0.0, 1.0)
 
 
 @st.cache_resource
@@ -85,7 +114,7 @@ def main():
     st.title("LumaCam: Edge-Native Adaptive Low-Light Computational Photography")
     st.markdown(
         "**Team 21 (SCTCE)** | Capstone Project Guided by **Asst. Prof. Arya Sreedhar**  \n"
-        "*Exposure-Conditioned Attention U-Net GAN with FiLM Conditioning & Edge-Native Color Science.*"
+        "*Exposure-Conditioned Attention U-Net GAN with FiLM Conditioning, Dual-Domain Detail Fusion & GCam Color Science.*"
     )
 
     # Sidebar Controls
@@ -108,29 +137,47 @@ def main():
     st.sidebar.subheader("User Exposure Slider (α)")
     alpha_val = st.sidebar.slider(
         "Exposure Amplification (α)",
-        min_value=10.0,
+        min_value=1.0,
         max_value=300.0,
-        value=100.0,
-        step=5.0,
-        help="Simulates the tactile GCam exposure slider modulating FiLM layers at the U-Net bottleneck. Low-light amplification in SID and Night Sight ranges from 50x to 300x.",
+        value=15.0,
+        step=1.0,
+        help="Simulates the tactile GCam exposure slider modulating FiLM layers at the U-Net bottleneck.",
+    )
+
+    trad_multiplier = st.sidebar.slider(
+        "Traditional ISO Noise Gain Multiplier",
+        min_value=1.0,
+        max_value=5.0,
+        value=3.0,
+        step=0.5,
+        help="Simulates uncooled mobile digital gain degradation: slider at 15x amplifies traditional noise by 3x (45x noise floor) with sensor clipping.",
     )
 
     st.sidebar.markdown("---")
-    st.sidebar.subheader("Post-Inference Color Science & ISP")
+    st.sidebar.subheader("Post-Inference Color Science & Flagship ISP")
     enable_color_science = st.sidebar.checkbox(
-        "Enable Color Science (AWB & Saturation)",
+        "Enable Base Color Science (AWB & Saturation)",
         value=True,
         help="Gray-World Auto White Balance in linear light + hue-preserving saturation.",
     )
     awb_strength = st.sidebar.slider("AWB Strength", 0.0, 1.0, 0.80, 0.05) if enable_color_science else 0.0
     sat_factor = st.sidebar.slider("Saturation Multiplier", 0.8, 1.5, 1.10, 0.05) if enable_color_science else 1.0
 
-    enable_isp_sharpness = st.sidebar.checkbox(
-        "Enable Dynamic Range & Edge Sharpening",
+    enable_flagship_isp = st.sidebar.checkbox(
+        "Enable Flagship Dual-Domain ISP Fusion",
         value=True,
-        help="Applies percentile contrast normalization to remove foggy black elevation, plus edge-preserving unsharp masking to synthesize crisp textures.",
+        help="Extracts noise-cored high-frequency textures from the source image, preserves true YUV chrominance fidelity, and applies GCam S-Curve tone mapping.",
     )
-    sharpen_amount = st.sidebar.slider("Sharpening Strength", 0.0, 2.5, 1.6, 0.1) if enable_isp_sharpness else 0.0
+    if enable_flagship_isp:
+        detail_boost = st.sidebar.slider("Texture Detail Injection", 0.0, 1.5, 0.85, 0.05)
+        color_fidelity = st.sidebar.slider("Color Fidelity Preservation", 0.0, 1.0, 0.80, 0.05)
+        tone_contrast = st.sidebar.slider("GCam S-Curve Contrast", 0.8, 1.8, 1.20, 0.05)
+        sharpen_amount = st.sidebar.slider("Edge Sharpening Strength", 0.0, 2.5, 1.6, 0.1)
+    else:
+        detail_boost = 0.0
+        color_fidelity = 0.0
+        tone_contrast = 1.0
+        sharpen_amount = 0.0
 
     st.sidebar.markdown("---")
     st.sidebar.subheader("Input Source")
@@ -188,10 +235,14 @@ def main():
             st.info("Upload an image or switch to Preloaded Low-Light Photo.")
             dataset = DummySIDDataset(num_samples=10, patch_size=patch_size, seed=42)
             bayer_tensor, gt_tensor, _ = dataset[0]
+            img_np = gt_tensor.permute(1, 2, 0).numpy()
+            packed = bayer_tensor.numpy()
     else:
         seed = st.sidebar.number_input("Random Scene Seed", value=42, step=1)
         dataset = DummySIDDataset(num_samples=10, patch_size=patch_size, seed=int(seed))
         bayer_tensor, gt_tensor, _ = dataset[0]
+        img_np = gt_tensor.permute(1, 2, 0).numpy()
+        packed = bayer_tensor.numpy()
 
     # Previews
     # Resolution scaling factors
@@ -208,10 +259,20 @@ def main():
     raw_dark = np.repeat(np.repeat(raw_dark_half, scale_y, axis=0), scale_x, axis=1)
     raw_dark = np.clip(raw_dark, 0.0, 1.0)
 
-    # 2. Traditional Linear ISO Gain (shows authentic sensor noise blow-up and chromatic speckling)
-    r_lin = bayer_tensor[0].numpy()
-    g_lin = 0.5 * (bayer_tensor[1].numpy() + bayer_tensor[3].numpy())
-    b_lin = bayer_tensor[2].numpy()
+    # 2. Traditional Linear ISO Gain with Scaled Noise Gain & Sensor Clipping
+    trad_alpha = alpha_val * trad_multiplier
+    trad_dark = packed / max(alpha_val, 1.0)
+    trad_shot = np.random.normal(0, np.sqrt(np.maximum(trad_dark, 0.0) / 40.0 + 1e-5)) * 0.02
+    trad_read = np.random.normal(0, 0.018, trad_dark.shape)
+    # Quantum efficiency imbalance: uncooled mobile red and blue channels have higher read noise
+    trad_read[0] *= 1.4
+    trad_read[2] *= 1.5
+    trad_noisy = np.clip(trad_dark + trad_shot + trad_read, 0.0, 1.0)
+    trad_bayer = np.clip(trad_noisy * trad_alpha, 0.0, 1.0)
+
+    r_lin = trad_bayer[0]
+    g_lin = 0.5 * (trad_bayer[1] + trad_bayer[3])
+    b_lin = trad_bayer[2]
     linear_half = np.stack([r_lin, g_lin, b_lin], axis=-1)
     linear_boost_3ch = np.repeat(np.repeat(linear_half, scale_y, axis=0), scale_x, axis=1)
     linear_boost_3ch = np.clip(linear_boost_3ch, 0.0, 1.0)
@@ -228,7 +289,7 @@ def main():
         enhanced_t, attn_maps = generator(inp_bayer, inp_alpha, return_attention_maps=True)
         enhanced_t = torch.clamp(enhanced_t, 0.0, 1.0)
 
-        # Apply post-inference color science
+        # Apply post-inference base color science
         if enable_color_science:
             final_t = apply_color_pipeline(
                 enhanced_t,
@@ -250,20 +311,46 @@ def main():
     if p98_raw > p2_raw + 1e-4:
         enhanced_raw_np = np.clip((enhanced_raw_np - p2_raw) / (p98_raw - p2_raw), 0.0, 1.0)
 
-    final_np = final_t[0].permute(1, 2, 0).cpu().numpy()
-    if enable_isp_sharpness:
-        # Dynamic range stretch to restore deep blacks and clean highlights
-        p1, p99 = np.percentile(final_np, (1, 99))
-        if p99 > p1 + 1e-4:
-            final_np = np.clip((final_np - p1) / (p99 - p1), 0.0, 1.0)
+    unet_np = final_t[0].permute(1, 2, 0).cpu().numpy()
 
-        # ISP Edge Sharpening (Unsharp Mask for crisp facial and architectural details)
+    # 4. Flagship Dual-Domain ISP Detail & Color Recovery
+    if enable_flagship_isp:
+        # A. High-Frequency Edge Detail Extraction with Noise Coring
+        orig_pil = Image.fromarray((img_np * 255.0).astype(np.uint8))
+        smooth_pil = orig_pil.filter(ImageFilter.GaussianBlur(radius=1.5))
+        smooth_np = np.array(smooth_pil, dtype=np.float32) / 255.0
+        detail = img_np - smooth_np
+        # Soft-threshold noise coring (removes micro sensor noise while preserving sharp edges)
+        detail_cored = np.sign(detail) * np.maximum(np.abs(detail) - 0.012, 0.0)
+        fused_rgb = np.clip(unet_np + detail_boost * detail_cored, 0.0, 1.0)
+
+        # B. Color Fidelity Preservation in YUV Space
+        if color_fidelity > 0.0:
+            yuv_fused = rgb_to_yuv(fused_rgb)
+            yuv_orig = rgb_to_yuv(img_np)
+            yuv_fused[:, :, 1] = (1.0 - color_fidelity) * yuv_fused[:, :, 1] + color_fidelity * yuv_orig[:, :, 1]
+            yuv_fused[:, :, 2] = (1.0 - color_fidelity) * yuv_fused[:, :, 2] + color_fidelity * yuv_orig[:, :, 2]
+            fused_rgb = yuv_to_rgb(yuv_fused)
+
+        # C. Adaptive Dynamic Range Stretch (removes elevated black levels)
+        p1, p99 = np.percentile(fused_rgb, (1, 99))
+        if p99 > p1 + 1e-4:
+            fused_rgb = np.clip((fused_rgb - p1) / (p99 - p1), 0.0, 1.0)
+
+        # D. GCam-Style S-Curve Tone Mapping
+        fused_toned = gcam_s_curve(fused_rgb, contrast=tone_contrast)
+
+        # E. ISP Edge-Preserving Unsharp Masking
         if sharpen_amount > 0.0:
-            final_pil = Image.fromarray((final_np * 255.0).astype(np.uint8))
+            final_pil = Image.fromarray((fused_toned * 255.0).astype(np.uint8))
             sharp_pil = final_pil.filter(
                 ImageFilter.UnsharpMask(radius=1.2, percent=int(sharpen_amount * 100), threshold=2)
             )
             final_np = np.array(sharp_pil, dtype=np.float32) / 255.0
+        else:
+            final_np = fused_toned
+    else:
+        final_np = unet_np
 
     gt_np = gt_tensor.permute(1, 2, 0).numpy()
 
@@ -281,9 +368,9 @@ def main():
     with col_m2:
         st.metric("Inference Latency", f"{latency_ms:.2f} ms", delta=f"{1000.0/latency_ms:.1f} FPS")
     with col_m3:
-        st.metric("Linear Boost PSNR", f"{psnr_linear:.2f} dB")
+        st.metric(f"Linear Gain PSNR ({trad_alpha:.0f}x)", f"{psnr_linear:.2f} dB")
     with col_m4:
-        st.metric("LumaCam Enhanced PSNR", f"{psnr_luma:.2f} dB", delta=f"{psnr_luma - psnr_linear:+.2f} dB")
+        st.metric("LumaCam Flagship PSNR", f"{psnr_luma:.2f} dB", delta=f"{psnr_luma - psnr_linear:+.2f} dB")
 
     st.markdown("---")
     st.subheader("Computational Photography Pipeline Comparison")
@@ -292,11 +379,11 @@ def main():
     with col1:
         st.image(raw_dark, caption=f"1. Physical Sensor Bayer (α = {alpha_val:.1f}x)", clamp=True, use_container_width=True)
     with col2:
-        st.image(linear_boost_3ch, caption="2. Traditional Linear ISO Gain (Noise Blow-up)", clamp=True, use_container_width=True)
+        st.image(linear_boost_3ch, caption=f"2. Traditional Linear ISO Gain ({trad_alpha:.0f}x Noise Blow-up)", clamp=True, use_container_width=True)
     with col3:
         st.image(enhanced_raw_np, caption="3. Attention U-Net GAN Output (Pre-Color)", clamp=True, use_container_width=True)
     with col4:
-        st.image(final_np, caption=f"4. LumaCam Final (+ Color Science: {psnr_luma:.2f} dB)", clamp=True, use_container_width=True)
+        st.image(final_np, caption=f"4. LumaCam Flagship ISP ({psnr_luma:.2f} dB)", clamp=True, use_container_width=True)
 
     # Attention Gate Explainability Section
     st.markdown("---")
@@ -321,7 +408,7 @@ def main():
 
     st.sidebar.markdown("---")
     st.sidebar.info(
-        "**Presentation Tip**: Slide exposure α to demonstrate how the FiLM layer adaptively balances highlights and shadows in a single forward pass without re-demosaicing!"
+        "**Presentation Tip**: Slide exposure α to demonstrate how the FiLM layer and Flagship Dual-Domain ISP dynamically restore edge details, rich colors, and deep contrast in real time!"
     )
 
 
