@@ -11,6 +11,13 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Added — Comprehensive Phase 1 LaTeX report draft and curated asset kit (Team 21)
+
+- **What / Why:** Structured and drafted complete academic contents in Report/contents.md formatted specifically for LaTeX compilation for the Phase 1 Capstone Project Report. Established Report/Assets/ containing 17 publication-grade 300 DPI figures, structured quantitative metrics (metrics_and_values.json), and comprehensive flowcharts and sequence diagrams (mermaid_diagrams.md). Includes front matter (Title, Certificate, Declaration, Abstract), 8 rigorous academic chapters, mathematical proofs (Poisson SNR, FiLM zero-init identity, PatchGAN receptive field), benchmark tables, BibTeX references, and ready-to-use LaTeX figure/table code snippets.
+- **Files:** Report/contents.md, Report/Assets/metrics_and_values.json, Report/Assets/mermaid_diagrams.md, Report/Assets/*, AGENTS.md, Progress.md, CHANGELOG.md.
+- **Verification:** Verified all 56 unit and integration tests pass (pytest tests/unit -q); verified file paths and assets in Report/Assets/.
+- **Impact / Follow-ups:** Ready to ingest user-provided LaTeX report template and sections for direct typesetting.
+
 ### Documentation — Comprehensive report update with experimental benchmarks & deliverables inventory (Team 21)
 
 - **What / Why:** Updated `report.md` (Sections 6 & 7) with the complete verification audit of all 56 unit and mobile tests, INT8 quantization benchmarks (74.5% graph reduction down to 7.94 MB), hardware latency comparisons across GTX 1650 and Pixel 7 Tensor G2, and an exhaustive inventory of completed project deliverables for capstone evaluation.

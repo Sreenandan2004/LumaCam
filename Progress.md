@@ -60,6 +60,8 @@ The following core modules, training infrastructure, and tests have been impleme
 | [project_presentation/assets/](project_presentation/assets/) | Curated Presentation Assets | ✅ Complete (2026-11-01, Team 21) | 11 publication-grade assets including 300 DPI loss curves, block diagrams, XAI heatmaps, and side-by-side crops. |
 | [mobile/android/.../Camera2RawController.kt](mobile/android/app/src/main/kotlin/com/lumacam/lumacam/Camera2RawController.kt) | Camera2 Raw Controller | ✅ Complete (2026-11-01, Nandan & Veni) | Native Kotlin Camera2 controller streaming 30 FPS hardware preview to Flutter TextureRegistry with Pixel 7 Level 3 RAW_SENSOR probing. |
 | [mobile/lib/presentation/screens/captured_preview_screen.dart](mobile/lib/presentation/screens/captured_preview_screen.dart) | Capture & Brightening Preview | ✅ Complete (2026-11-01, Nandan & Veni) | Full-screen capture review, post-capture dynamic exposure slider (alpha in [10, 300]), split comparison lens, and gallery export. |
+| [Report/contents.md](Report/contents.md) | LaTeX Capstone Report Draft | ✅ Complete (2026-11-01, Team 21) | Comprehensive Phase 1 Capstone Project Report drafted for LaTeX typesetting, complete with front matter, 8 chapters, mathematical proofs, tables, and bibtex citations. |
+| [Report/Assets/](Report/Assets/) | LaTeX Report Assets & Data | ✅ Complete (2026-11-01, Team 21) | 17 publication-grade figures, metrics_and_values.json, and mermaid_diagrams.md for direct LaTeX integration. |
 ---
 
 ## 3. Wednesday MVP & Benchmark Status (October 14 Milestone)

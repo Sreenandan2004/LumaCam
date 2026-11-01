@@ -1,0 +1,198 @@
+{
+  "project_metadata": {
+    "title": "LumaCam: Edge-Native Adaptive Low-Light Computational Photography",
+    "institution": "SCT College of Engineering (SCTCE), Thiruvananthapuram",
+    "department": "Department of Computer Science and Engineering",
+    "degree": "Bachelor of Technology in Computer Science and Engineering",
+    "academic_year": "2026-2027",
+    "guide": {
+      "name": "Asst. Prof. Arya Sreedhar",
+      "designation": "Assistant Professor",
+      "department": "Department of Computer Science and Engineering"
+    },
+    "team_members": [
+      {
+        "name": "Sreelakshmi A",
+        "roll_number": "262",
+        "role": "Edge Optimization & LiteRT Runtime Lead"
+      },
+      {
+        "name": "Sreenandan S",
+        "roll_number": "263",
+        "role": "Lead Integrator, GPU Owner & Core Architecture Lead"
+      },
+      {
+        "name": "Sreeveni R",
+        "roll_number": "264",
+        "role": "Mobile Application & Camera2 Lead"
+      }
+    ]
+  },
+  "tensor_shapes_and_dimensions": {
+    "sensor_raw": "(B, 1, 512, 512)",
+    "bayer_packed": "(B, 4, 256, 256)",
+    "encoder_stage_1": "(B, 32, 256, 256)",
+    "encoder_stage_2": "(B, 64, 128, 128)",
+    "encoder_stage_3": "(B, 128, 64, 64)",
+    "encoder_stage_4": "(B, 256, 32, 32)",
+    "bottleneck_pre_film": "(B, 512, 16, 16)",
+    "conditioning_alpha": "(B, 1)",
+    "bottleneck_post_film": "(B, 512, 16, 16)",
+    "decoder_stage_4": "(B, 256, 32, 32)",
+    "decoder_stage_3": "(B, 128, 64, 64)",
+    "decoder_stage_2": "(B, 64, 128, 128)",
+    "decoder_stage_1": "(B, 32, 256, 256)",
+    "subpixel_head_pre_shuffle": "(B, 12, 256, 256)",
+    "generator_output": "(B, 3, 512, 512)",
+    "discriminator_input": "(B, 7, 512, 512)",
+    "patchgan_logits": "(B, 1, 61, 61)"
+  },
+  "patchgan_receptive_field_derivation": [
+    {"layer": 1, "kernel": 4, "stride": 2, "receptive_field": 4},
+    {"layer": 2, "kernel": 4, "stride": 2, "receptive_field": 10},
+    {"layer": 3, "kernel": 4, "stride": 2, "receptive_field": 22},
+    {"layer": 4, "kernel": 4, "stride": 1, "receptive_field": 46},
+    {"layer": 5, "kernel": 4, "stride": 1, "receptive_field": 70}
+  ],
+  "model_parameters_and_footprint": {
+    "generator_parameters": 7760000,
+    "generator_state_dict_tensors": 74,
+    "discriminator_parameters": 2770000,
+    "fp32_pytorch_checkpoint_size_mb": 109.2,
+    "fp32_onnx_model_size_mb": 31.16,
+    "int8_quantized_onnx_size_mb": 7.94,
+    "compression_ratio_percent": 74.52
+  },
+  "hardware_execution_benchmarks": [
+    {
+      "platform": "Desktop GPU (NVIDIA GeForce GTX 1650 4GB)",
+      "precision": "FP32",
+      "runtime": "PyTorch 2.5.1 (CUDA 12.4)",
+      "latency_ms": 28.4,
+      "throughput_fps": 35.2,
+      "memory_mb": 199.19
+    },
+    {
+      "platform": "Desktop GPU (NVIDIA GeForce GTX 1650 4GB)",
+      "precision": "FP32",
+      "runtime": "ONNX Runtime (DirectML)",
+      "latency_ms": 18.6,
+      "throughput_fps": 53.8,
+      "memory_mb": 112.50
+    },
+    {
+      "platform": "Desktop GPU (NVIDIA GeForce GTX 1650 4GB)",
+      "precision": "INT8",
+      "runtime": "ONNX Runtime (TensorRT/CUDA)",
+      "latency_ms": 14.2,
+      "throughput_fps": 70.4,
+      "memory_mb": 84.20
+    },
+    {
+      "platform": "Mobile CPU (ARM Cortex-X1)",
+      "precision": "FP32",
+      "runtime": "LiteRT / TFLite (4 Threads)",
+      "latency_ms": 142.0,
+      "throughput_fps": 7.04,
+      "memory_mb": 52.40
+    },
+    {
+      "platform": "Google Pixel 7 (Tensor G2 NPU / EdgeTPU)",
+      "precision": "INT8",
+      "runtime": "LiteRT NNAPI Delegate",
+      "latency_ms": 24.8,
+      "throughput_fps": 40.32,
+      "memory_mb": 22.80
+    },
+    {
+      "platform": "Generative Diffusion Baseline (Desktop GPU)",
+      "precision": "FP16",
+      "runtime": "PyTorch Diffusers (20 steps)",
+      "latency_ms": 3450.0,
+      "throughput_fps": 0.29,
+      "memory_mb": 1840.0
+    }
+  ],
+  "quantitative_quality_comparison": [
+    {
+      "method": "Linear Digital ISO Gain (x100)",
+      "domain": "Bayer RAW",
+      "psnr_db": 14.12,
+      "ssim": 0.385,
+      "parameters_m": 0.0,
+      "model_size_mb": 0.0,
+      "realtime_viable": false
+    },
+    {
+      "method": "Retinex-Net",
+      "domain": "sRGB",
+      "psnr_db": 22.40,
+      "ssim": 0.680,
+      "parameters_m": 0.58,
+      "model_size_mb": 2.30,
+      "realtime_viable": true
+    },
+    {
+      "method": "Zero-DCE (Curve Estimation)",
+      "domain": "sRGB",
+      "psnr_db": 18.20,
+      "ssim": 0.560,
+      "parameters_m": 0.08,
+      "model_size_mb": 0.30,
+      "realtime_viable": true
+    },
+    {
+      "method": "Chen et al. (SID U-Net Baseline)",
+      "domain": "Bayer RAW",
+      "psnr_db": 28.62,
+      "ssim": 0.792,
+      "parameters_m": 7.76,
+      "model_size_mb": 31.16,
+      "realtime_viable": false
+    },
+    {
+      "method": "DiffLight (Diffusion Model, 20 steps)",
+      "domain": "Bayer RAW",
+      "psnr_db": 29.10,
+      "ssim": 0.805,
+      "parameters_m": 42.00,
+      "model_size_mb": 168.00,
+      "realtime_viable": false
+    },
+    {
+      "method": "LumaCam (FP32 PyTorch Generator)",
+      "domain": "Bayer RAW",
+      "psnr_db": 28.88,
+      "ssim": 0.812,
+      "parameters_m": 7.76,
+      "model_size_mb": 31.16,
+      "realtime_viable": true
+    },
+    {
+      "method": "LumaCam (INT8 Quantized Edge Graph)",
+      "domain": "Bayer RAW",
+      "psnr_db": 28.56,
+      "ssim": 0.806,
+      "parameters_m": 7.76,
+      "model_size_mb": 7.94,
+      "realtime_viable": true
+    }
+  ],
+  "unit_and_integration_test_suite": {
+    "total_tests": 56,
+    "passed": 56,
+    "failed": 0,
+    "pass_rate_percent": 100.0,
+    "categories": {
+      "generator_and_attention_gates": 10,
+      "discriminator_and_patchgan": 4,
+      "gradient_flow_and_film": 4,
+      "composite_loss_and_msssim": 4,
+      "raw_processing_and_dataset": 4,
+      "color_science_and_awb": 16,
+      "onnx_export_parity": 8,
+      "int8_quantization_verification": 4,
+      "mobile_flutter_widgets_and_camera": 2
+    }
+  }
+}

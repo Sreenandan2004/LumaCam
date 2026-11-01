@@ -139,6 +139,9 @@ LumaCam/
 ├── CHANGELOG.md                            # Mandatory change log (see Section 0, Master Rules)
 ├── Progress.md                             # Milestone status & next steps
 ├── README.md                               # Public project documentation & demo media
+├── Report/                                 # Phase 1 LaTeX Capstone Project Report
+│   ├── contents.md                         # Complete academic report drafted for LaTeX
+│   └── Assets/                             # Report figures, diagrams, JSON metrics & values
 ├── app.py                                  # Interactive Streamlit camera demo & metrics dashboard
 ├── evaluations/                            # Benchmark metrics, figures, and presentation guide
 │   ├── figures/                            # High-res diagrams for slides & reports
