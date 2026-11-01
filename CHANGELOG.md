@@ -11,16 +11,25 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Fix — Declaration page student names vertical spacing and alignment (Team 21)
+
+- **What / Why:** Replaced excessive 1.2cm inter-name gap with compact 0.3cm spacing (\[0.3cm]) in declaration.tex and replaced hardcoded vertical spacing with fill, anchoring the student names block cleanly and cohesively in the bottom-right corner opposite Date and Place.
+- **Files:** Report/latex/declaration.tex, Report/lumacam_phase1_report.zip, CHANGELOG.md.
+- **Verification:** Verified syntax and rebuilt ZIP archive.
+- **Impact / Follow-ups:** Eliminates wide vertical gaps between student names on the Declaration page.
+
 ### Enhanced — LaTeX Phase 1 report formatting, layout alignments & SID dataset figures (Team 21)
 
 - **What / Why:** Implemented academic layout refinements per KTU project report guidelines:
   1. Enlarged SCTCE college logo on Title page (width 4.8cm) and Certificate page (width 3.6cm).
-  2. Configured left alignment for all chapter headings (aggedright) in main.tex.
+  2. Configured left alignment for all chapter headings (
+aggedright) in main.tex.
   3. Formatted Certificate page: removed External Examiner column, centered HOD block symmetrically.
   4. Formatted Declaration page: aligned student names and IDs in the bottom-right corner.
   5. Added bbreviations.tex (List of Abbreviations) with explicit 1.25cm line spacing.
   6. Replaced the generic showcase figure in Chapter 5 with the authentic See-in-the-Dark (SID) dataset paired sensor comparison (sid_dataset_comparison.jpg) and added training convergence curves (	raining_curves.png).
-  7. Added strict orphan/widow penalties (\widowpenalty=10000, \clubpenalty=10000, aggedbottom) to prevent 1-2 line spillover pages.
+  7. Added strict orphan/widow penalties (\widowpenalty=10000, \clubpenalty=10000, 
+aggedbottom) to prevent 1-2 line spillover pages.
   8. Rebuilt Report/lumacam_phase1_report.zip (1.40 MB).
 - **Files:** Report/latex/main.tex, Report/latex/titlepage.tex, Report/latex/certificate.tex, Report/latex/declaration.tex, Report/latex/abbreviations.tex, Report/latex/chapters/chapter5.tex, Report/latex/figures/*, Report/lumacam_phase1_report.zip, CHANGELOG.md.
 - **Verification:** Verified all 13 .tex files with automated stack-based syntax validator (zero unclosed tags or syntax issues); all 56 unit and integration tests pass (pytest tests/unit -q).
