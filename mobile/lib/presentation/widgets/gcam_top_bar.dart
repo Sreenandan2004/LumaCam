@@ -6,12 +6,16 @@ class GCamTopBar extends StatelessWidget {
   final bool isHudVisible;
   final VoidCallback onToggleHud;
   final VoidCallback onOpenTrainingInsights;
+  final bool isSafeDemoMode;
+  final VoidCallback onToggleSafeDemo;
 
   const GCamTopBar({
     super.key,
     required this.isHudVisible,
     required this.onToggleHud,
     required this.onOpenTrainingInsights,
+    this.isSafeDemoMode = false,
+    required this.onToggleSafeDemo,
   });
 
   @override
@@ -49,6 +53,19 @@ class GCamTopBar extends StatelessWidget {
           // Action Buttons
           Row(
             children: [
+              // Safe Presentation Demo Toggle
+              IconButton(
+                icon: Icon(
+                  isSafeDemoMode ? Icons.shield_rounded : Icons.videocam_rounded,
+                  color: isSafeDemoMode ? GCamColors.accentGreen : GCamColors.accentAmber,
+                  size: 22,
+                ),
+                tooltip: isSafeDemoMode
+                    ? 'Safe Benchmark Mode (Bypassing OEM Night Sight)'
+                    : 'Live Hardware Camera Stream Active',
+                onPressed: onToggleSafeDemo,
+              ),
+
               // Training Insights Button
               IconButton(
                 icon: const Icon(Icons.insights_rounded, color: GCamColors.accentBlue, size: 22),

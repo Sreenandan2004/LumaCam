@@ -15,7 +15,8 @@ void main() {
 
     // 2. Verify Camera Modes in Carousel
     expect(find.text('ADAPTIVE LOW LIGHT'), findsOneWidget);
-    expect(find.text('NIGHT SIGHT'), findsOneWidget);
+    expect(find.text('NIGHT SIGHT BYPASS'), findsOneWidget);
+    expect(find.text('SAFE BENCHMARK'), findsOneWidget);
     expect(find.text('PRO RAW'), findsOneWidget);
 
     // 3. Verify GCam Shutter Button and Exposure Slider exist
@@ -27,7 +28,7 @@ void main() {
     expect(find.textContaining('LATENCY'), findsOneWidget);
 
     // 5. Test Tapping Mode in Carousel
-    await tester.tap(find.text('NIGHT SIGHT'));
+    await tester.tap(find.text('NIGHT SIGHT BYPASS'));
     await tester.pump();
 
     // 6. Test Tapping HUD Toggle Button

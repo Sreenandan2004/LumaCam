@@ -232,9 +232,17 @@ class Camera2RawController(
 
     /**
      * Translates exposure amplification alpha into hardware sensor exposure & gain.
+     * Explicitly disables Google Pixel OEM Night Sight and multi-frame processing
+     * so that pure raw sensor frames are delivered to LumaCam.
      */
     private fun applyLiveExposureSettings(builder: CaptureRequest.Builder, alpha: Double) {
         try {
+            // Explicitly bypass Google Pixel OEM Night Sight, scene modes, and temporal noise reduction
+            builder.set(CaptureRequest.CONTROL_SCENE_MODE, CaptureRequest.CONTROL_SCENE_MODE_DISABLED)
+            builder.set(CaptureRequest.NOISE_REDUCTION_MODE, CaptureRequest.NOISE_REDUCTION_MODE_OFF)
+            builder.set(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_OFF)
+            builder.set(CaptureRequest.HOT_PIXEL_MODE, CaptureRequest.HOT_PIXEL_MODE_OFF)
+
             if (isoRange != null && exposureTimeRange != null) {
                 // Modulate exposure time and sensor sensitivity smoothly with alpha
                 val minIso = isoRange!!.lower

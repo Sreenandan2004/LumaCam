@@ -33,12 +33,13 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
   bool _useIspPipeline = true;
   int _comparisonSampleIndex = 0;
   bool _showShutterFlash = false;
+  bool _isSafeDemoMode = false;
 
   final List<String> _cameraModes = [
-    'NIGHT SIGHT',
+    'SAFE BENCHMARK',
     'ADAPTIVE LOW LIGHT',
+    'NIGHT SIGHT BYPASS',
     'PRO RAW',
-    'CAMERA',
   ];
 
   // Sample comparison pairs for simulator fallback
@@ -157,6 +158,22 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
               isHudVisible: _isHudVisible,
               onToggleHud: () => setState(() => _isHudVisible = !_isHudVisible),
               onOpenTrainingInsights: _openTrainingInsights,
+              isSafeDemoMode: _isSafeDemoMode,
+              onToggleSafeDemo: () {
+                setState(() => _isSafeDemoMode = !_isSafeDemoMode);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: GCamColors.surfaceElevated,
+                    content: Text(
+                      _isSafeDemoMode
+                          ? 'Safe Benchmark Mode: Showing Verified RAW Sensor Data'
+                          : 'Live Camera Active: Streaming Pixel 7 (Night Sight Bypassed)',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              },
             ),
 
             // 2. Main Viewfinder (Card with rounded corners)
@@ -171,7 +188,7 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
                       children: [
                         // Hardware Viewfinder Stream or Split Comparison
                         Positioned.fill(
-                          child: _camera2Service.textureId != null
+                          child: (!_isSafeDemoMode && _camera2Service.textureId != null)
                               ? FittedBox(
                                   fit: BoxFit.cover,
                                   child: SizedBox(
@@ -283,7 +300,12 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
             GCamModeCarousel(
               modes: _cameraModes,
               selectedIndex: _selectedModeIndex,
-              onModeSelected: (idx) => setState(() => _selectedModeIndex = idx),
+              onModeSelected: (idx) {
+                setState(() {
+                  _selectedModeIndex = idx;
+                  _isSafeDemoMode = (idx == 0);
+                });
+              },
             ),
             const SizedBox(height: 12),
 

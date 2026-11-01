@@ -107,6 +107,32 @@ class MetricsHudOverlay extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(height: 6),
+          // Night Sight Bypass Security Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: GCamColors.accentGreen.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: GCamColors.accentGreen.withValues(alpha: 0.4)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.shield_rounded, color: GCamColors.accentGreen, size: 12),
+                SizedBox(width: 6),
+                Text(
+                  'PIXEL NIGHT SIGHT: BYPASSED • LUMACAM RAW GAN',
+                  style: TextStyle(
+                    color: GCamColors.accentGreen,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
