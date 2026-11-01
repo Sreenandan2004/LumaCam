@@ -11,6 +11,13 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Added — Project presentation slide deck script, viva guide & visual asset suite (Team 21)
+
+- **What / Why:** Created the complete presentation package for tomorrow\'s capstone review and teacher evaluation. Features \project_presentation/contents.md\ covering the 8 required sections across 16 detailed slides with word-for-word speaker notes, examiner Q&A defense, and visual mapping. Added \project_presentation/assets/\ populated via \scripts/generate_presentation_assets.py\ with 11 publication-grade assets including generated 500-epoch training convergence curves (\	raining_curves.png\) and system block architecture (\rchitecture_block_diagram.png\). Included \project_presentation/demo_script.md\ with step-by-step instructions for the dual live demo (Streamlit laptop lab + Flutter GCam mobile inspector).
+- **Files:** \project_presentation/contents.md\, \project_presentation/demo_script.md\, \project_presentation/assets/*\, \scripts/generate_presentation_assets.py\, \CHANGELOG.md\, \Progress.md\.
+- **Verification:** Ran \python scripts/generate_presentation_assets.py\ to generate and verify assets; ran \pytest tests/unit -q\ (56 passed) and \lutter test\ in \mobile/\ (all passed).
+- **Impact / Follow-ups:** Equips Sreenandan, Sreelakshmi, and Sreeveni with complete presentation materials, speaker scripts, viva Q&A answers, and demo choreography for tomorrow\'s review.
+
 ### Added — Pixel GCam mobile app scaffolding, interactive split slider & HUD (Nandan & Veni)
 
 - **What / Why:** Completed Tasks 9 & 10 of mobile application workstream: created the Flutter project in mobile/ with a Pixel GCam interface. Features an interactive before/after split slider comparing sensor Bayer/ISO boost against LumaCam + GCam ISP, a tactile vertical exposure slider (α in [1, 300]), live performance matrix HUD (latency, FPS, SNR gain), animated GCam shutter button, mode carousel, and an expandable bottom sheet showcasing Kaggle cloud training metrics (500 epochs, L1 + MS-SSIM + cGAN loss) and Attention Gate XAI heatmaps for faculty reviews.
