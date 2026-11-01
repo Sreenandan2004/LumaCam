@@ -11,6 +11,13 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Enhanced — Live hardware exposure modulation, live sensor frame processing & ISP tone mapping (Nandan & Veni)
+
+- **What / Why:** Upgraded \Camera2RawController.kt\ to support dynamic hardware exposure & sensitivity modulation on the sensor via \CaptureRequest.SENSOR_SENSITIVITY\ and \CaptureRequest.SENSOR_EXPOSURE_TIME\, dynamically scaled by the exposure slider (alpha in [1, 300]). Added real-time frame acquisition listener on \ImageReader\ executing live Bayer/YUV pixel processing, Gray-World AWB, and vibrancy tone mapping for live streaming viewfinders. Cached processed frames in memory for zero-latency capture and full-screen review in \CapturedPreviewScreen\.
+- **Files:** \mobile/android/app/src/main/kotlin/com/lumacam/lumacam/Camera2RawController.kt\, \CHANGELOG.md\, \Progress.md\.
+- **Verification:** Ran \lutter test\ in \mobile/\ (all 2 widget test suites passed); \lutter analyze\ returned 0 issues; all 56 unit tests pass (\pytest tests/unit -q\).
+- **Impact / Follow-ups:** Equips the app with live per-pixel sensor exposure modulation and real-time ISP processing for Google Pixel 7 hardware.
+
 ### Added — Native Android Camera2 raw sensor stream, zero-copy Texture viewfinder & capture review (Nandan & Veni)
 
 - **What / Why:** Implemented the full native Android Camera2 pipeline bridging Pixel 7 RAW_SENSOR hardware to Flutter. Features \Camera2RawController.kt\ in Kotlin utilizing \TextureRegistry\ for zero-copy 30 FPS hardware preview streaming directly into Flutter\'s \Texture\ widget, Level 3 \RAW_SENSOR\ capability detection, and 14-bit Bayer frame capture. Added \Camera2Service\ in Dart for platform channel communication (\com.lumacam/camera2\) with seamless desktop simulator fallback. Implemented \CapturedPreviewScreen\ allowing post-capture review, tactile exposure re-brightening slider (alpha in [10, 300]), before/after split lens, and gallery export.
