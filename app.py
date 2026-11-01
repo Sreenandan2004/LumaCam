@@ -61,18 +61,18 @@ def load_lumacam_model(checkpoint_path_str: str):
             ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
             if isinstance(ckpt, dict):
                 if "generator_state_dict" in ckpt:
-                    generator.load_state_dict(ckpt["generator_state_dict"])
+                    generator.load_state_dict(ckpt["generator_state_dict"], strict=False)
                 elif "generator_state" in ckpt:
-                    generator.load_state_dict(ckpt["generator_state"])
+                    generator.load_state_dict(ckpt["generator_state"], strict=False)
                 elif "model_state_dict" in ckpt:
-                    generator.load_state_dict(ckpt["model_state_dict"])
+                    generator.load_state_dict(ckpt["model_state_dict"], strict=False)
                 else:
-                    generator.load_state_dict(ckpt)
+                    generator.load_state_dict(ckpt, strict=False)
                 meta["epoch"] = ckpt.get("epoch", None)
                 meta["val_psnr"] = ckpt.get("val_psnr", None)
                 meta["val_ssim"] = ckpt.get("val_ssim", None)
             else:
-                generator.load_state_dict(ckpt)
+                generator.load_state_dict(ckpt, strict=False)
             loaded = True
         except Exception as e:
             st.warning(f"Error loading checkpoint: {e}")

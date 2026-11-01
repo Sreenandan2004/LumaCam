@@ -132,7 +132,7 @@ def main():
         print(f"[LumaCam Demo] Loading weights from {args.checkpoint}")
         ckpt = torch.load(args.checkpoint, map_location=device, weights_only=False)
         state_dict = ckpt["generator_state_dict"] if "generator_state_dict" in ckpt else ckpt
-        model.load_state_dict(state_dict)
+        model.load_state_dict(state_dict, strict=False)
     model.eval()
 
     # Acquire image

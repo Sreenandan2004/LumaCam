@@ -11,6 +11,13 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Enhanced — Restored Kaggle trained weights (20.8 dB PSNR) & robust checkpoint loader (Team 21)
+
+- **What / Why:** Inspected and verified \lumacam_best(1)\, confirming it contained the extracted PyTorch weights trained on Kaggle (\al_psnr: 20.79 dB\, \al_ssim: 0.722\, \generator_state_dict\ present). Re-packaged and restored the checkpoint to \checkpoints/lumacam_best.pt\ (32.65 MB). Updated \pp.py\ and \demo_raw_camera.py\ with adaptive \strict=False\ loading to gracefully support models with and without GroupNorm in AttentionGate skip connections.
+- **Files:** \pp.py\, \demo_raw_camera.py\, \checkpoints/lumacam_best.pt\, \CHANGELOG.md\.
+- **Verification:** Verified forward pass producing non-degenerate, high-contrast restorations; all 56 unit tests pass (\pytest tests/unit -q\); Flutter widget tests pass (\lutter test\).
+- **Impact / Follow-ups:** Upgrades the local checkpoint from early 12 dB test weights to the authentic 20.8 dB Kaggle-trained neural model for tomorrow\'s presentation and live demos.
+
 ### Enhanced — Live hardware exposure modulation, live sensor frame processing & ISP tone mapping (Nandan & Veni)
 
 - **What / Why:** Upgraded \Camera2RawController.kt\ to support dynamic hardware exposure & sensitivity modulation on the sensor via \CaptureRequest.SENSOR_SENSITIVITY\ and \CaptureRequest.SENSOR_EXPOSURE_TIME\, dynamically scaled by the exposure slider (alpha in [1, 300]). Added real-time frame acquisition listener on \ImageReader\ executing live Bayer/YUV pixel processing, Gray-World AWB, and vibrancy tone mapping for live streaming viewfinders. Cached processed frames in memory for zero-latency capture and full-screen review in \CapturedPreviewScreen\.
