@@ -9,6 +9,7 @@ All tests run via \texttt{pytest tests/unit -v} and \texttt{flutter test}. Table
 \centering
 \caption{Automated Test Suite Verification Summary}
 \label{tab:test_suite}
+\resizebox{0.95\textwidth}{!}{%
 \begin{tabular}{lccc}
 \toprule
 \textbf{Test Module} & \textbf{Scope / Component} & \textbf{Tests} & \textbf{Pass Rate} \\ \midrule
@@ -22,7 +23,8 @@ All tests run via \texttt{pytest tests/unit -v} and \texttt{flutter test}. Table
 \texttt{test\_quantize\_int8.py} & Calibration, INT8 Dynamic Range & 4 & 100\% (4/4) \\
 \texttt{widget\_test.dart} & Flutter GCam UI, Camera Platform & 2 & 100\% (2/2) \\ \midrule
 \textbf{Total Automated Tests} & \textbf{Entire LumaCam System} & \textbf{56} & \textbf{100\% (56/56)} \\ \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 \section{Hardware Profiling, Latency and Throughput Benchmarks}
@@ -34,6 +36,7 @@ The profiling results are detailed in Table \ref{tab:hardware_benchmarks} and il
 \centering
 \caption{Hardware Execution Profiling \& Latency Benchmarks}
 \label{tab:hardware_benchmarks}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{lccccc}
 \toprule
 \textbf{Hardware Platform} & \textbf{Precision} & \textbf{Framework / Runtime} & \textbf{Latency (ms)} & \textbf{Throughput (FPS)} & \textbf{Model Size} \\ \midrule
@@ -43,7 +46,8 @@ Desktop GPU (GTX 1650) & FP32 & ONNX Runtime (DirectML) & 18.6 ms & 53.8 FPS & 3
 Mobile CPU (Cortex-X1) & FP32 & LiteRT (4 Threads) & 142.0 ms & 7.0 FPS & 31.16 MB \\
 \textbf{Google Pixel 7 (Tensor G2)} & \textbf{INT8} & \textbf{LiteRT NNAPI / NPU Delegate} & \textbf{24.8 ms} & \textbf{40.3 FPS} & \textbf{7.94 MB} \\
 Generative Diffusion (GPU) & FP16 & PyTorch Diffusers (20 steps) & 3,450.0 ms & 0.29 FPS & 168.0 MB \\ \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 \begin{figure}[h]
@@ -79,6 +83,7 @@ Table \ref{tab:quant_audit} details the compression ratio and accuracy impact of
 \centering
 \caption{Post-Training Quantization (PTQ) Compression and Accuracy Audit}
 \label{tab:quant_audit}
+\resizebox{0.95\textwidth}{!}{%
 \begin{tabular}{lccc}
 \toprule
 \textbf{Evaluation Metric} & \textbf{FP32 Baseline} & \textbf{INT8 Quantized} & \textbf{Degradation ($\Delta$)} \\ \midrule
@@ -86,7 +91,8 @@ Model Storage Footprint & $31.16\text{ MB}$ & $\mathbf{7.94\text{ MB}}$ & \textb
 Peak Signal-to-Noise Ratio & $28.88\text{ dB}$ & $28.56\text{ dB}$ & $-0.32\text{ dB}$ (Target: $< 0.5\text{ dB}$) \\
 Structural Similarity Index & $0.812$ & $0.806$ & $-0.006$ (Target: $< 0.010$) \\
 Mobile NPU Latency & $142.0\text{ ms}$ (CPU) & $\mathbf{24.8\text{ ms}}$ (NPU) & \textbf{$5.7\times$ Speedup} \\ \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 \textbf{Finding}: The PSNR drop incurred by INT8 quantization is only \textbf{$0.32\text{ dB}$}, comfortably within our strict academic requirement of $< 0.5\text{ dB}$. The $74.52\%$ reduction in storage footprint allows the model to reside entirely within mobile SRAM caches, minimizing memory bus bandwidth and battery power consumption.

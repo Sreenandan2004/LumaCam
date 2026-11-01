@@ -19,7 +19,8 @@ To ensure modularity and parallel velocity across the capstone timeline, the tec
 \centering
 \caption{Team Work Breakdown Structure and Ownership Matrix}
 \label{tab:team_wbs}
-\begin{tabular}{lp{4cm}p{9.2cm}}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lp{4.2cm}p{8.5cm}}
 \toprule
 \textbf{Team Member} & \textbf{Role / Focus} & \textbf{Key Responsibilities \& Deliverables} \\ \midrule
 \textbf{Sreenandan S} \newline (SCT23CS063) & Lead Integrator, GPU Owner \& Core DL Architecture Lead & 
@@ -45,7 +46,8 @@ $\bullet$ Native Android Kotlin Camera2 controller (\texttt{Camera2RawController
 $\bullet$ Zero-copy \texttt{SurfaceTexture} hardware preview streaming (30 FPS target) \newline
 $\bullet$ Hardcoded HAL overrides to bypass Google Pixel OEM Night Sight \newline
 $\bullet$ Post-inference linear color science ISP (Gray-World AWB and saturation boost) \\ \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 \section{Phase 1 Milestone Accomplishment Matrix}
@@ -55,6 +57,7 @@ All major Phase 1 deliverables scheduled for October--November 2026 have been su
 \centering
 \caption{Phase 1 Milestone Accomplishment Matrix}
 \label{tab:milestones}
+\resizebox{0.92\textwidth}{!}{%
 \begin{tabular}{llcc}
 \toprule
 \textbf{Milestone} & \textbf{Deliverable Description} & \textbf{Scheduled} & \textbf{Status} \\ \midrule
@@ -68,7 +71,8 @@ M1.7 & INT8 Post-Training Quantization (PTQ) & Week 7 & Completed \\
 M1.8 & Native Android Camera2 Zero-Copy Pipe & Week 8 & Completed \\
 M1.9 & Flutter GCam UI \& Safe Benchmark Mode & Week 9 & Completed \\
 M1.10 & Phase 1 Project Report \& Defense Kit & Week 10 & Completed \\ \bottomrule
-\end{tabular}
+\end{tabular}%
+}
 \end{table}
 
 \section{Risk Analysis and Mitigation Strategies}

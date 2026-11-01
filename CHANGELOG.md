@@ -11,6 +11,16 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Fix — Symmetrical horizontal page centering and table textwidth auto-scaling (Team 21)
+
+- **What / Why:** Resolved right-shift and table overflow cutoffs (as seen in Table 6.1 Team Ownership Matrix):
+  1. Configured perfectly symmetrical 25mm left/right margins (left=25mm, right=25mm) in main.tex, eliminating the 10mm rightward bias and centering all headers, footers, and text horizontally on the page.
+  2. Wrapped all multi-column benchmark and metadata tables (Table 5.1, Table 5.2, Table 5.3, Table 6.1, Table 6.2) in \resizebox{\textwidth}{!}{...} to guarantee strict auto-scaling within page boundaries.
+  3. Packaged the final verified project into Report/LumaCam_phase1.zip.
+- **Files:** Report/latex/main.tex, Report/latex/chapters/chapter5.tex, Report/latex/chapters/chapter6.tex, Report/LumaCam_phase1.zip, Report/lumacam_phase1_report.zip, CHANGELOG.md.
+- **Verification:** Verified syntax across all 13 .tex files with zero errors; rebuilt ZIP packages.
+- **Impact / Follow-ups:** Completely prevents table cutoffs and off-center rendering on Overleaf.
+
 ### Style — Title page typography baselineskip and bottom department anchoring (Team 21)
 
 - **What / Why:** Adjusted Title page layout in 	itlepage.tex: configured explicit 24pt baseline leading for the 18pt title font (\fontsize{18pt}{24pt}\selectfont) with a natural two-line wrap to eliminate line-cramping, and introduced \vfill after the SCTCE college logo to anchor the Department, College, and Date block cleanly towards the bottom margin.
