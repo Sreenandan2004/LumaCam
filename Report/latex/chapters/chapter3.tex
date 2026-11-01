@@ -3,12 +3,12 @@
 \section{Overall System Architecture}
 The proposed LumaCam pipeline spans five modular domains: (1) Hardware Sensor Acquisition, (2) Native Raw Preprocessing, (3) Exposure-Conditioned Attention U-Net Inference, (4) Linear Color Science ISP, and (5) Flutter GCam Viewfinder. The complete block diagram is illustrated in Figure \ref{fig:arch_block_diagram}.
 
-\begin{figure*}[t]
+\begin{figure}[t]
 \centering
 \includegraphics[width=0.95\textwidth]{figures/architecture_block_diagram.png}
 \caption{End-to-End System Architecture of LumaCam: Demonstrating sensor RAW acquisition, Bayer quad packing, FiLM latent exposure modulation, Spatial Attention Gated skip connections, and real-time color science ISP.}
 \label{fig:arch_block_diagram}
-\end{figure*}
+\end{figure}
 
 \section{Raw Bayer CFA Mechanics and Quad Packing}
 Digital CMOS sensors use a Bayer Color Filter Array (CFA) arranged in $2 \times 2$ repeating quads: Red (R), Green 1 ($G_1$), Blue (B), and Green 2 ($G_2$).

@@ -30,7 +30,7 @@ Inference latency and throughput were benchmarked on local desktop development h
 
 The results are detailed in Table \ref{tab:hardware_benchmarks} and illustrated in Figure \ref{fig:latency_benchmark}.
 
-\begin{table*}[t]
+\begin{table}[t]
 \centering
 \caption{Hardware Execution Profiling \& Latency Benchmarks}
 \label{tab:hardware_benchmarks}
@@ -44,7 +44,7 @@ Mobile CPU (Cortex-X1) & FP32 & LiteRT (4 Threads) & 142.0 ms & 7.0 FPS & 31.16 
 \textbf{Google Pixel 7 (Tensor G2)} & \textbf{INT8} & \textbf{LiteRT NNAPI / NPU Delegate} & \textbf{24.8 ms} & \textbf{40.3 FPS} & \textbf{7.94 MB} \\
 Generative Diffusion (GPU) & FP16 & PyTorch Diffusers (20 steps) & 3,450.0 ms & 0.29 FPS & 168.0 MB \\ \bottomrule
 \end{tabular}
-\end{table*}
+\end{table}
 
 \begin{figure}[h]
 \centering
@@ -77,7 +77,7 @@ Mobile NPU Latency & $142.0\text{ ms}$ (CPU) & $\mathbf{24.8\text{ ms}}$ (NPU) &
 \section{Comparative Quality Benchmarks against State-of-the-Art}
 Table \ref{tab:sota_benchmarks} presents quantitative comparisons evaluated on paired short/long exposure raw images from the See-in-the-Dark (SID) Sony dataset.
 
-\begin{table*}[t]
+\begin{table}[t]
 \centering
 \caption{Quantitative Quality Benchmarking on See-In-The-Dark (SID) Sony Dataset}
 \label{tab:sota_benchmarks}
@@ -94,17 +94,17 @@ DiffLight (Diffusion, 20 steps) & Bayer RAW & $\mathbf{29.10}$ & 0.805 & 42.0 M 
 \textbf{LumaCam (INT8 Edge Graph)} & \textbf{Bayer RAW} & \textbf{28.56} & \textbf{0.806} & \textbf{7.76 M} & \textbf{7.94 MB} & \textbf{40.3 FPS (Pixel 7 NPU)} \\ \bottomrule
 \end{tabular}%
 }
-\end{table*}
+\end{table}
 
 \section{Explainable AI (XAI): Spatial Attention Gate Activation Heatmaps}
 To verify that the Spatial Attention Gates function as intended, feature activation maps were extracted from the four attention gate levels ($\alpha^1, \alpha^2, \alpha^3, \alpha^4$). Figure \ref{fig:attention_heatmaps} visualizes the attention weights.
 
-\begin{figure*}[t]
+\begin{figure}[t]
 \centering
 \includegraphics[width=0.90\textwidth]{figures/attention_gate_heatmaps.png}
 \caption{Explainable AI (XAI): Spatial Attention Gate activation maps ($\alpha^1, \alpha^2, \alpha^3, \alpha^4$) illustrating high feature weight assignment to structural edges and selective suppression of dark background shot noise.}
 \label{fig:attention_heatmaps}
-\end{figure*}
+\end{figure}
 
 \begin{itemize}
     \item \textbf{Shallow Gates ($\alpha^1$ and $\alpha^2$)}: The attention maps assign near-zero weights ($\alpha^l \approx 0.04$) to uniform dark sensor regions where Poisson noise dominates, effectively muting background noise transmission. Concurrently, crisp unit weights ($\alpha^l \to 1.0$) are assigned to sharp high-frequency edges, window panes, and textual boundaries.
@@ -114,12 +114,12 @@ To verify that the Spatial Attention Gates function as intended, feature activat
 \section{Visual Restoration Showcase and Qualitative Analysis}
 Figure \ref{fig:before_after_split} showcases a center-split restoration on an extreme low-light scene ($< 1\text{ lux}$) captured by the Sony $\alpha$7S II sensor.
 
-\begin{figure*}[t]
+\begin{figure}[t]
 \centering
-\includegraphics[width=0.92\textwidth]{figures/before_after_split_showcase.png}
+\includegraphics[width=0.92\textwidth]{figures/before_after_split_showcase.jpg}
 \caption{Qualitative Restoration Showcase: Center-split comparison showing extreme low-light raw input ($< 1\text{ lux}$) versus LumaCam neural reconstruction on Sony $\alpha$7S II sensor data ($28.88\text{ dB}$ PSNR, $0.812$ SSIM).}
 \label{fig:before_after_split}
-\end{figure*}
+\end{figure}
 
 The visual analysis highlights:
 \begin{enumerate}

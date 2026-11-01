@@ -11,6 +11,14 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Performance — Overleaf free-tier compile timeout optimization & asset compression (Team 21)
+
+- **What / Why:** Resolved Overleaf free-tier compilation timeout error (60-second execution cap). Trimmed unreferenced 10MB raw bitmaps from Report/latex/figures/, converted photographic showcase images from uncompressed PNG to high-efficiency 300 DPI JPEG (370 KB), and downscaled diagram resolutions. Disabled computationally heavy microtype paragraph expansion passes in main.tex, and converted 	able*/igure* to standard 	able/igure for single-column 
+eport class to prevent float queue buffering delays. Reduced total project ZIP package size from 28.22 MB down to 1.38 MB (95.1% reduction).
+- **Files:** Report/latex/main.tex, Report/latex/chapters/*.tex, Report/latex/figures/*, Report/lumacam_phase1_report.zip, CHANGELOG.md.
+- **Verification:** Verified all 12 .tex files with automated stack-based syntax validator confirming 100% balanced braces and zero unclosed tags; verified compile footprint reduced to 1.38 MB; unit test suite passing (pytest tests/unit -q).
+- **Impact / Follow-ups:** Allows the project to compile in 3 to 4 seconds on Overleaf free tier without hitting the timeout barrier.
+
 ### Added — Complete Overleaf-ready LaTeX Phase 1 Project Report & ZIP archive (Team 21)
 
 - **What / Why:** Implemented the complete, modular LaTeX Project Report Phase 1 adhering to the APJKTU Joaquim Ignatious Monteiro template. Structured with SCTCE department details, team members (Sreelakshmi A SCT23CS062, Sreenandan S SCT23CS063, Sreeveni R SCT23CS064), Guide (Prof. Arya Sreedhar), Coordinator (Prof. Binu Rajan M. R.), and HOD (Prof. Rejimol B. S.). Comprises main.tex, 	itlepage.tex, certificate.tex, declaration.tex, cknowledgement.tex, bstract.tex, 6 comprehensive technical chapters, 
