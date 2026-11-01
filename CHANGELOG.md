@@ -11,6 +11,13 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Documentation — Comprehensive report update with experimental benchmarks & deliverables inventory (Team 21)
+
+- **What / Why:** Updated `report.md` (Sections 6 & 7) with the complete verification audit of all 56 unit and mobile tests, INT8 quantization benchmarks (74.5% graph reduction down to 7.94 MB), hardware latency comparisons across GTX 1650 and Pixel 7 Tensor G2, and an exhaustive inventory of completed project deliverables for capstone evaluation.
+- **Files:** `report.md`, `.gitignore`, `CHANGELOG.md`.
+- **Verification:** Markdown formatting verified; test suite passing (`pytest tests/unit -q`); git status clean.
+- **Impact / Follow-ups:** Equips the team with a fully structured, submission-ready academic report.
+
 ### Added — Checkpoint resuming support in Kaggle notebook for multi-session team training (Team 21)
 
 - **What / Why:** Upgraded `notebooks/train_lumacam_kaggle.ipynb` to support seamless checkpoint resuming across Kaggle GPU sessions and teammate accounts. Added `RESUME_CHECKPOINT` configuration cell that restores generator and discriminator weights, optimizer states, epoch counter, and best validation PSNR, allowing training to be split across multiple sessions or accounts (e.g. Sreenandan, Sreelakshmi, Sreeveni) to leverage the team's combined 90 free GPU hours/week without losing progress.

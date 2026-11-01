@@ -18,6 +18,7 @@ runs/
 results/
 *.log
 lumacam_best*/
+checkpoints/
 
 # Dataset & Raw Media
 *.ARW
