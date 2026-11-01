@@ -44,4 +44,27 @@ void main() {
     await tester.pump();
     expect(find.byType(MetricsHudOverlay), findsOneWidget);
   });
+
+  testWidgets('LumaCam Shutter Press and Captured Preview Test', (WidgetTester tester) async {
+    await tester.pumpWidget(const LumaCamApp());
+    await tester.pump();
+
+    // Tap shutter button
+    final shutter = find.byType(GCamShutterButton);
+    expect(shutter, findsOneWidget);
+    await tester.tap(shutter);
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // Verify navigation to Captured Preview Screen
+    expect(find.text('LumaCam Result Inspector'), findsOneWidget);
+    expect(find.textContaining('Post-Capture Exposure Adjustment'), findsOneWidget);
+    expect(find.text('Save DNG'), findsOneWidget);
+    expect(find.text('Retake'), findsOneWidget);
+
+    // Tap Retake to pop back to main viewfinder
+    await tester.tap(find.text('Retake'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GCamShutterButton), findsOneWidget);
+  });
 }

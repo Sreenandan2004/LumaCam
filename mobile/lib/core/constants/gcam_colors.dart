@@ -5,12 +5,15 @@ class GCamColors {
   GCamColors._();
 
   static const Color background = Color(0xFF0F0F12);
+  static const Color backgroundDark = Color(0xFF0F0F12);
   static const Color surface = Color(0xFF1B1B1F);
   static const Color surfaceElevated = Color(0xFF26262B);
   static const Color surfaceGlass = Color(0xCC1B1B1F);
+  static const Color borderSubtle = Color(0x33FFFFFF);
 
   // Pixel Accent Palette
   static const Color accentAmber = Color(0xFFFDD835); // Exposure sun / slider
+  static const Color accentYellow = Color(0xFFFDD835); // Sun slider alias
   static const Color accentBlue = Color(0xFF8AB4F8);  // Google Material Blue
   static const Color accentGreen = Color(0xFF81C995); // Good performance / Success
   static const Color accentCoral = Color(0xFFF28B82); // Low light warning

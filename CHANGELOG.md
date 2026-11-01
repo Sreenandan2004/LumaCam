@@ -11,6 +11,13 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Added — Native Android Camera2 raw sensor stream, zero-copy Texture viewfinder & capture review (Nandan & Veni)
+
+- **What / Why:** Implemented the full native Android Camera2 pipeline bridging Pixel 7 RAW_SENSOR hardware to Flutter. Features \Camera2RawController.kt\ in Kotlin utilizing \TextureRegistry\ for zero-copy 30 FPS hardware preview streaming directly into Flutter\'s \Texture\ widget, Level 3 \RAW_SENSOR\ capability detection, and 14-bit Bayer frame capture. Added \Camera2Service\ in Dart for platform channel communication (\com.lumacam/camera2\) with seamless desktop simulator fallback. Implemented \CapturedPreviewScreen\ allowing post-capture review, tactile exposure re-brightening slider (alpha in [10, 300]), before/after split lens, and gallery export.
+- **Files:** \mobile/android/app/src/main/kotlin/com/lumacam/lumacam/Camera2RawController.kt\, \mobile/android/app/src/main/kotlin/com/lumacam/lumacam/MainActivity.kt\, \mobile/android/app/src/main/AndroidManifest.xml\, \mobile/lib/core/services/camera2_service.dart\, \mobile/lib/presentation/screens/captured_preview_screen.dart\, \mobile/lib/presentation/screens/gcam_camera_screen.dart\, \mobile/lib/core/constants/gcam_colors.dart\, \mobile/test/widget_test.dart\, \CHANGELOG.md\, \Progress.md\.
+- **Verification:** Ran \lutter test\ in \mobile/\ (all 2 widget test suites passed); \lutter analyze\ returned 0 issues; all 56 unit tests pass (\pytest tests/unit -q\).
+- **Impact / Follow-ups:** Unblocks live 30 FPS viewfinder streaming, Level 3 RAW detection, and full capture-and-review workflow on Google Pixel 7.
+
 ### Added — High-contrast validated Before/After low-light image assets & split showcase (Team 21)
 
 - **What / Why:** Generated publication-grade 300 DPI multi-scene Before/After image comparisons with authentic Poisson-Gaussian sensor noise models and verified metrics badges (PSNR, SSIM, SNR gain) for the slide deck and mobile demo. Added \efore_after_outdoor_night.png\ (outdoor architecture, 28.92 dB PSNR), \efore_after_indoor_detail.png\ (indoor texture/typography, 28.75 dB PSNR), and \efore_after_split_showcase.png\ (center-split GCam lens). Synchronized sample images in \mobile/assets/samples/\ to provide full dynamic range (std=49.2, min=0, max=255) for the interactive Flutter GCam inspector.

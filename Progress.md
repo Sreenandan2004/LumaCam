@@ -58,6 +58,8 @@ The following core modules, training infrastructure, and tests have been impleme
 | [mobile/lib/main.dart](mobile/lib/main.dart) | Pixel GCam Flutter App | ✅ Complete (2026-11-01, Nandan & Veni) | AMOLED GCam UI with interactive split-screen slider, tactile exposure dial, live hardware HUD, and Kaggle training insights sheet. |
 | [project_presentation/contents.md](project_presentation/contents.md) | Presentation Slide Deck & Script | ✅ Complete (2026-11-01, Team 21) | 16-slide detailed presentation script spanning the 8 required sections, speaker notes, examiner viva defense Q&A, and demo playbook. |
 | [project_presentation/assets/](project_presentation/assets/) | Curated Presentation Assets | ✅ Complete (2026-11-01, Team 21) | 11 publication-grade assets including 300 DPI loss curves, block diagrams, XAI heatmaps, and side-by-side crops. |
+| [mobile/android/.../Camera2RawController.kt](mobile/android/app/src/main/kotlin/com/lumacam/lumacam/Camera2RawController.kt) | Camera2 Raw Controller | ✅ Complete (2026-11-01, Nandan & Veni) | Native Kotlin Camera2 controller streaming 30 FPS hardware preview to Flutter TextureRegistry with Pixel 7 Level 3 RAW_SENSOR probing. |
+| [mobile/lib/presentation/screens/captured_preview_screen.dart](mobile/lib/presentation/screens/captured_preview_screen.dart) | Capture & Brightening Preview | ✅ Complete (2026-11-01, Nandan & Veni) | Full-screen capture review, post-capture dynamic exposure slider (alpha in [10, 300]), split comparison lens, and gallery export. |
 ---
 
 ## 3. Wednesday MVP & Benchmark Status (October 14 Milestone)
