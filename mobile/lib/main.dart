@@ -34,7 +34,6 @@ class LumaCamApp extends StatelessWidget {
           primary: GCamColors.accentAmber,
           secondary: GCamColors.accentBlue,
           surface: GCamColors.surface,
-          background: GCamColors.background,
         ),
         useMaterial3: true,
       ),

@@ -19,9 +19,9 @@ class GCamExposureSlider extends StatelessWidget {
       height: 240,
       padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.55),
+        color: Colors.black.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1.0),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1.0),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -30,7 +30,7 @@ class GCamExposureSlider extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: GCamColors.accentAmber.withOpacity(0.2),
+              color: GCamColors.accentAmber.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -51,10 +51,10 @@ class GCamExposureSlider extends StatelessWidget {
                 data: SliderThemeData(
                   trackHeight: 3.0,
                   activeTrackColor: GCamColors.accentAmber,
-                  inactiveTrackColor: Colors.white.withOpacity(0.2),
+                  inactiveTrackColor: Colors.white.withValues(alpha: 0.2),
                   thumbColor: Colors.white,
                   thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7.0),
-                  overlayColor: GCamColors.accentAmber.withOpacity(0.2),
+                  overlayColor: GCamColors.accentAmber.withValues(alpha: 0.2),
                   overlayShape: const RoundSliderOverlayShape(overlayRadius: 16.0),
                 ),
                 child: Slider(

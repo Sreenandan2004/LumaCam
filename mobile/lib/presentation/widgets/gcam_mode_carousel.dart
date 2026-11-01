@@ -23,7 +23,7 @@ class GCamModeCarousel extends StatelessWidget {
           shrinkWrap: true,
           scrollDirection: Axis.horizontal,
           itemCount: modes.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          separatorBuilder: (context, index) => const SizedBox(width: 8),
           itemBuilder: (context, index) {
             final isSelected = index == selectedIndex;
             return GestureDetector(
@@ -32,7 +32,7 @@ class GCamModeCarousel extends StatelessWidget {
                 duration: const Duration(milliseconds: 180),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isSelected ? Colors.white.withOpacity(0.18) : Colors.transparent,
+                  color: isSelected ? Colors.white.withValues(alpha: 0.18) : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(

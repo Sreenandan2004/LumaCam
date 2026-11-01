@@ -17,12 +17,12 @@ class MetricsHudOverlay extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.72),
+        color: Colors.black.withValues(alpha: 0.72),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.18), width: 1.0),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18), width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(alpha: 0.4),
             blurRadius: 10,
           ),
         ],
@@ -75,7 +75,7 @@ class MetricsHudOverlay extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildStat('LATENCY', '${metrics.latencyMs.toStringAsFixed(1)} ms', GCamColors.accentAmber),
-              _buildStat('FPS', '${metrics.fps.toStringAsFixed(0)}', GCamColors.accentGreen),
+              _buildStat('FPS', metrics.fps.toStringAsFixed(0), GCamColors.accentGreen),
               _buildStat('GAIN (α)', '${metrics.exposureAlpha.round()}x', GCamColors.accentAmber),
               _buildStat('SNR GAIN', '+${metrics.psnrGainDb.toStringAsFixed(2)} dB', GCamColors.accentBlue),
             ],
@@ -86,7 +86,7 @@ class MetricsHudOverlay extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(

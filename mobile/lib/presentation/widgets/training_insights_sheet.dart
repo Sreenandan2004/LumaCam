@@ -105,7 +105,7 @@ class TrainingInsightsSheet extends StatelessWidget {
                   child: Image.asset(
                     'assets/figures/attention_gate_heatmaps.png',
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -122,7 +122,7 @@ class TrainingInsightsSheet extends StatelessWidget {
                   child: Image.asset(
                     'assets/figures/latency_throughput_benchmark.png',
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -134,7 +134,7 @@ class TrainingInsightsSheet extends StatelessWidget {
                   child: Image.asset(
                     'assets/figures/quality_metrics_comparison.png',
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                   ),
                 ),
                 const SizedBox(height: 30),

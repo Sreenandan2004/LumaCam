@@ -43,7 +43,7 @@ class _BeforeAfterSliderState extends State<BeforeAfterSlider> {
               Image.asset(
                 widget.afterImagePath,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (context, error, stackTrace) => Container(
                   color: GCamColors.surfaceElevated,
                   child: const Center(
                     child: Text('After Image', style: TextStyle(color: GCamColors.textSecondary)),
@@ -57,7 +57,7 @@ class _BeforeAfterSliderState extends State<BeforeAfterSlider> {
                 child: Image.asset(
                   widget.beforeImagePath,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (context, error, stackTrace) => Container(
                     color: Colors.black,
                     child: const Center(
                       child: Text('Before Image', style: TextStyle(color: GCamColors.textSecondary)),
@@ -73,7 +73,7 @@ class _BeforeAfterSliderState extends State<BeforeAfterSlider> {
                 bottom: 0,
                 child: Container(
                   width: 3.0,
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                 ),
               ),
 
@@ -89,7 +89,7 @@ class _BeforeAfterSliderState extends State<BeforeAfterSlider> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -127,9 +127,9 @@ class _BeforeAfterSliderState extends State<BeforeAfterSlider> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.65),
+        color: Colors.black.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accentColor.withOpacity(0.6), width: 1.0),
+        border: Border.all(color: accentColor.withValues(alpha: 0.6), width: 1.0),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

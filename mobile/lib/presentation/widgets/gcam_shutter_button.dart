@@ -42,7 +42,7 @@ class _GCamShutterButtonState extends State<GCamShutterButton>
           boxShadow: widget.isProcessing
               ? [
                   BoxShadow(
-                    color: GCamColors.accentAmber.withOpacity(0.5),
+                    color: GCamColors.accentAmber.withValues(alpha: 0.5),
                     blurRadius: 16,
                     spreadRadius: 2,
                   )
