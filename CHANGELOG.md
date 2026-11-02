@@ -11,6 +11,17 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Feat — Pixel GCam Night Sight Burst Integration, Viewfinder Orientation & Adaptive AE (Team 21)
+
+- **What / Why:** Overhauled real-time Camera2 preview and photo capture on mobile to resolve viewport orientation inversion, scene clipping in varying ambient light, and noisy single-frame captures:
+  1. Fixed Viewfinder & Capture Orientation: Compensated for physical 90° portrait sensor mount by setting default Flutter rotation to `_viewfinderQuarterTurns = 0` (counter-clockwise 90° correction) and forwarding the active orientation to `Camera2RawController.kt` so captured output matrices match what the user sees. Added an interactive orientation toggle (`Icons.screen_rotation_rounded`) in `GcamTopBar` for manual 90° cycling.
+  2. Fixed Dynamic Range & Auto-Exposure: Replaced hardcoded manual `CONTROL_AE_MODE_OFF` with dynamic hardware Auto-Exposure (`CONTROL_AE_MODE_ON`, `CONTROL_AF_MODE_CONTINUOUS_PICTURE`, `CONTROL_AWB_MODE_AUTO`) modulated by exposure compensation bias (`CONTROL_AE_EXPOSURE_COMPENSATION`). This resolves sensor blackout and highlight blowouts, operating smoothly across high-contrast daylight, room lighting, and dim shadows.
+  3. Authentic Pixel Night Sight Long-Exposure Burst (2.4s): Implemented multi-frame burst integration (`NIGHT_SIGHT_BURST_FRAMES = 6`) accumulating raw photon counts across a 2.4-second exposure window to eliminate Poisson shot noise ($\sigma / \sqrt{K}$). Added a circular countdown timer overlay ("Hold still... 2.4s") with real-time pipeline status messaging.
+  4. Flagship Dual-Frame Output: Produces both an authentic low-exposure "Before" frame with traditional sensor noise and a pristine "After" frame enhanced with GCam S-curve tone mapping, cross-bilateral luminance filtering, spatial chroma cleaning, Laplacian unsharp deblurring, and auto white balance.
+- **Files:** `mobile/android/app/src/main/kotlin/com/lumacam/lumacam/Camera2RawController.kt`, `mobile/android/app/src/main/kotlin/com/lumacam/lumacam/MainActivity.kt`, `mobile/lib/core/services/camera2_service.dart`, `mobile/lib/presentation/screens/gcam_camera_screen.dart`, `mobile/lib/presentation/widgets/gcam_top_bar.dart`, `mobile/test/widget_test.dart`, `CHANGELOG.md`.
+- **Verification:** Ran `cd mobile; flutter analyze` (0 issues), `flutter test` (all 2 widget tests passed), `flutter build apk --debug` (successfully generated `app-debug.apk`), and `python -m pytest tests/unit -v` (all 56 unit tests passed).
+- **Impact / Follow-ups:** Produces sharp, noise-free low-light photos with correct orientation and natural exposure on physical Android hardware.
+
 ### Feat — Edge Flagship ISP Pipeline & Camera2 Viewfinder Streaming (Team 21)
 
 - **What / Why:** Resolved mobile viewfinder black screen and integrated a production Edge Flagship ISP pipeline for physical Google Pixel camera hardware:

@@ -55,6 +55,7 @@ void main() {
     expect(shutter, findsOneWidget);
     await tester.tap(shutter);
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 2600));
     await tester.pumpAndSettle();
 
     // Verify navigation to Captured Preview Screen

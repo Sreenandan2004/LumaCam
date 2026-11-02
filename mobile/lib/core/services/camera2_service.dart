@@ -78,10 +78,13 @@ class Camera2Service {
   }
 
   /// Captures a sensor frame, runs Flagship ISP restoration, and returns result payload
-  Future<Map<String, dynamic>> captureImage({required double alpha}) async {
+  Future<Map<String, dynamic>> captureImage({required double alpha, int quarterTurns = 0}) async {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android && _textureId != null) {
       try {
-        final Map<dynamic, dynamic>? res = await _channel.invokeMethod('captureImage', {'alpha': alpha});
+        final Map<dynamic, dynamic>? res = await _channel.invokeMethod('captureImage', {
+          'alpha': alpha,
+          'quarterTurns': quarterTurns,
+        });
         if (res != null) {
           return {
             'imageBytes': res['imageBytes'] as Uint8List?,

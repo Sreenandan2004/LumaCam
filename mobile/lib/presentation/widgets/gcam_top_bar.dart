@@ -8,6 +8,7 @@ class GCamTopBar extends StatelessWidget {
   final VoidCallback onOpenTrainingInsights;
   final bool isSafeDemoMode;
   final VoidCallback onToggleSafeDemo;
+  final VoidCallback? onRotateOrientation;
 
   const GCamTopBar({
     super.key,
@@ -16,6 +17,7 @@ class GCamTopBar extends StatelessWidget {
     required this.onOpenTrainingInsights,
     this.isSafeDemoMode = false,
     required this.onToggleSafeDemo,
+    this.onRotateOrientation,
   });
 
   @override
@@ -53,6 +55,14 @@ class GCamTopBar extends StatelessWidget {
           // Action Buttons
           Row(
             children: [
+              // Fast Live Orientation Adjuster
+              if (onRotateOrientation != null)
+                IconButton(
+                  icon: const Icon(Icons.screen_rotation_rounded, color: GCamColors.accentAmber, size: 20),
+                  tooltip: 'Adjust Viewfinder Orientation (Rotate 90°)',
+                  onPressed: onRotateOrientation,
+                ),
+
               // Safe Presentation Demo Toggle
               IconButton(
                 icon: Icon(

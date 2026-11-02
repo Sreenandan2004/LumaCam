@@ -37,7 +37,8 @@ class MainActivity : FlutterActivity() {
                 }
                 "captureImage" -> {
                     val alpha = call.argument<Double>("alpha") ?: 100.0
-                    camera2RawController?.captureImage(alpha, result)
+                    val quarterTurns = call.argument<Int>("quarterTurns") ?: 0
+                    camera2RawController?.captureImage(alpha, quarterTurns, result)
                 }
                 "dispose" -> {
                     camera2RawController?.dispose(result)
