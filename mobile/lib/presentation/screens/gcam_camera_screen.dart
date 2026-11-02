@@ -33,7 +33,7 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
   bool _isHudVisible = true;
   bool _isCapturing = false;
   double _captureProgress = 0.0;
-  int _selectedModeIndex = 1; // Default: 'ADAPTIVE LOW LIGHT'
+  int _selectedModeIndex = 1; // Default: 'NIGHT SIGHT'
   bool _useIspPipeline = true;
   int _comparisonSampleIndex = 0;
   bool _showShutterFlash = false;
@@ -41,10 +41,9 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
   int _viewfinderQuarterTurns = 0; // Default: 0 quarter turns (counter-clockwise 90° from prior tilt)
 
   final List<String> _cameraModes = [
-    'SAFE BENCHMARK',
-    'ADAPTIVE LOW LIGHT',
-    'NIGHT SIGHT BYPASS',
-    'PRO RAW',
+    'BURST',
+    'NIGHT SIGHT',
+    'PRO',
   ];
 
   // Sample comparison pairs for simulator fallback
@@ -74,7 +73,7 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
     super.initState();
     _captureAnimationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2400),
+      duration: const Duration(milliseconds: 1500),
     )..addListener(() {
         if (mounted) {
           setState(() => _captureProgress = _captureAnimationController.value);
@@ -100,16 +99,24 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
   void _handleShutterPress() async {
     if (_isCapturing) return;
 
+    final activeMode = _cameraModes[_selectedModeIndex];
+    final animDuration = activeMode == 'BURST'
+        ? const Duration(milliseconds: 250)
+        : (activeMode == 'PRO' ? const Duration(milliseconds: 500) : const Duration(milliseconds: 1500));
+
+    _captureAnimationController.duration = animDuration;
+
     setState(() {
       _isCapturing = true;
       _captureProgress = 0.0;
     });
 
-    // Start 2.4s Night Sight animation and trigger native capture
+    // Start mode-appropriate progress animation and trigger native capture
     final animFuture = _captureAnimationController.forward(from: 0.0);
     final captureFuture = _camera2Service.captureImage(
       alpha: _exposureAlpha,
       quarterTurns: _viewfinderQuarterTurns,
+      mode: activeMode,
     );
 
     final results = await Future.wait<dynamic>([
@@ -123,8 +130,8 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
         _showShutterFlash = true;
       });
 
-      // Subtle shutter flash feedback (120ms)
-      await Future.delayed(const Duration(milliseconds: 120));
+      // Subtle shutter flash feedback (80ms)
+      await Future.delayed(const Duration(milliseconds: 80));
       if (mounted) {
         setState(() {
           _showShutterFlash = false;
@@ -310,11 +317,13 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
                                           ),
                                           Center(
                                             child: Text(
-                                              '${((1.0 - _captureProgress) * 2.5).clamp(0.0, 2.5).toStringAsFixed(1)}s',
-                                              style: const TextStyle(
+                                              _cameraModes[_selectedModeIndex] == 'BURST'
+                                                  ? 'BURST'
+                                                  : '${((1.0 - _captureProgress) * 1.5).clamp(0.0, 1.5).toStringAsFixed(1)}s',
+                                              style: TextStyle(
                                                 color: Colors.white,
                                                 fontWeight: FontWeight.bold,
-                                                fontSize: 13,
+                                                fontSize: _cameraModes[_selectedModeIndex] == 'BURST' ? 10 : 13,
                                               ),
                                             ),
                                           ),
@@ -322,9 +331,9 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
                                       ),
                                     ),
                                     const SizedBox(height: 16),
-                                    const Text(
-                                      'Hold still...',
-                                      style: TextStyle(
+                                    Text(
+                                      _cameraModes[_selectedModeIndex] == 'BURST' ? 'Instant Freeze Burst' : 'Hold still...',
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 16,
                                         fontWeight: FontWeight.w700,
@@ -332,9 +341,11 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
                                       ),
                                     ),
                                     const SizedBox(height: 6),
-                                    const Text(
-                                      'Integrating multi-frame exposure & Attention U-Net',
-                                      style: TextStyle(
+                                    Text(
+                                      _cameraModes[_selectedModeIndex] == 'BURST'
+                                          ? 'Freezing motion with rapid sensor keyframe fusion'
+                                          : 'Integrating multi-frame exposure & Lucky Imaging',
+                                      style: const TextStyle(
                                         color: Colors.white70,
                                         fontSize: 11,
                                       ),
@@ -445,7 +456,6 @@ class _GCamCameraScreenState extends State<GCamCameraScreen> with SingleTickerPr
               onModeSelected: (idx) {
                 setState(() {
                   _selectedModeIndex = idx;
-                  _isSafeDemoMode = (idx == 0);
                 });
               },
             ),

@@ -85,11 +85,13 @@ class Camera2RawController(
     private var lastFpsTimestamp: Long = 0
     private var currentFps: Double = 30.0
 
-    // Night Sight Multi-Frame Burst Accumulator
+    // Night Sight Multi-Frame Burst Accumulator & Lucky Imaging
     private var isCapturingNightSight = AtomicBoolean(false)
     private var pendingCaptureResult: MethodChannel.Result? = null
     private var pendingCaptureAlpha: Double = 100.0
     private var pendingCaptureQuarterTurns: Int = 0
+    private var pendingCaptureMode: String = "NIGHT SIGHT"
+    private var targetBurstFrames: Int = 6
     private var captureStartTime: Long = 0
 
     private var burstFramesReceived: Int = 0
@@ -97,6 +99,13 @@ class Camera2RawController(
     private var accumulatedU: LongArray? = null
     private var accumulatedV: LongArray? = null
     private var initialBeforeBytes: ByteArray? = null
+
+    // Sharpest Anchor Keyframe (Lucky Imaging)
+    private var bestSharpnessScore: Long = -1L
+    private var bestAnchorY: IntArray? = null
+    private var bestAnchorU: IntArray? = null
+    private var bestAnchorV: IntArray? = null
+    private var lastEstimatedLuma: Double = 50.0
 
     private fun startBackgroundThread() {
         if (backgroundThread == null) {
@@ -323,9 +332,12 @@ class Camera2RawController(
     }
 
     /**
-     * Starts authentic 2-3s Night Sight multi-frame burst integration.
+     * Starts adaptive burst capture:
+     * - BURST mode: Rapid 3-frame freeze capture (<250ms), zero handshake motion smear.
+     * - NIGHT SIGHT mode: Adaptive 3-to-6 frame integration based on real-time scene lux.
+     * - PRO mode: 4-frame capture with tactile alpha control.
      */
-    fun captureImage(alpha: Double, quarterTurns: Int, result: MethodChannel.Result) {
+    fun captureImage(alpha: Double, quarterTurns: Int, mode: String, result: MethodChannel.Result) {
         val captureAlpha = if (alpha > 0) alpha else currentAlpha
 
         if (cameraDevice == null || captureSession == null || imageReader == null) {
@@ -341,18 +353,30 @@ class Camera2RawController(
         pendingCaptureResult = result
         pendingCaptureAlpha = captureAlpha
         pendingCaptureQuarterTurns = quarterTurns
+        pendingCaptureMode = mode
         captureStartTime = System.currentTimeMillis()
 
         burstFramesReceived = 0
+        bestSharpnessScore = -1L
+        bestAnchorY = null
+        bestAnchorU = null
+        bestAnchorV = null
         accumulatedLuma = null
         accumulatedU = null
         accumulatedV = null
         initialBeforeBytes = null
 
+        // Determine target burst count adaptively
+        targetBurstFrames = when {
+            mode.contains("BURST") -> 3 // Fast instant freeze (<250ms), zero handshake blur
+            mode.contains("PRO") -> 4
+            else -> if (lastEstimatedLuma > 45.0) 3 else NIGHT_SIGHT_BURST_FRAMES // Adaptive: 3 frames if well-lit, 6 if pitch dark
+        }
+
         try {
-            // Trigger multi-frame burst sequence to collect photon accumulation over ~2-3 seconds
+            // Trigger multi-frame burst sequence to collect photon accumulation
             val burstRequests = ArrayList<CaptureRequest>()
-            for (i in 0 until NIGHT_SIGHT_BURST_FRAMES) {
+            for (i in 0 until targetBurstFrames) {
                 val requestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE).apply {
                     addTarget(imageReader!!.surface)
                     applyLiveExposureSettings(this, captureAlpha)
@@ -362,15 +386,16 @@ class Camera2RawController(
 
             captureSession?.captureBurst(burstRequests, null, backgroundHandler)
 
-            // Watchdog: Finalize after 3.5s maximum to guarantee app never hangs
+            // Watchdog: Finalize if frames take longer than expected
+            val watchdogTimeout = if (mode.contains("BURST")) 1200L else 3500L
             backgroundHandler?.postDelayed({
                 if (isCapturingNightSight.get()) {
                     finalizeNightSightCapture()
                 }
-            }, 3500)
+            }, watchdogTimeout)
 
         } catch (e: Exception) {
-            Log.e(TAG, "Error triggering Night Sight burst", e)
+            Log.e(TAG, "Error triggering burst capture", e)
             isCapturingNightSight.set(false)
             pendingCaptureResult = null
             deliverFallbackCapture(captureAlpha, result)
@@ -378,7 +403,8 @@ class Camera2RawController(
     }
 
     /**
-     * Receives and integrates incoming frames across the Night Sight exposure window.
+     * Receives and integrates incoming frames across the exposure window.
+     * Implements Lucky Imaging by identifying and retaining the sharpest anchor frame.
      */
     private fun handleNightSightBurstFrame(image: Image) {
         val width = image.width
@@ -437,15 +463,44 @@ class Camera2RawController(
             }
         }
 
-        // 3. For Frame 1: Create the authentic underexposed sensor snapshot for the "Before" view
-        if (burstFramesReceived == 0 && initialBeforeBytes == null) {
-            initialBeforeBytes = generateBeforeBaselineJpeg(yCurrent, uCurrent, vCurrent, width, height, uvW)
+        // 3. Lucky Imaging: Measure high-frequency gradient energy to find the sharpest anchor frame
+        var frameSharpness = 0L
+        val step = 4
+        for (y in 0 until height - step step step) {
+            val r0 = y * width
+            val r1 = (y + step) * width
+            for (x in 0 until width - step step step) {
+                val center = yCurrent[r0 + x]
+                val right = yCurrent[r0 + x + step]
+                val down = yCurrent[r1 + x]
+                frameSharpness += kotlin.math.abs(right - center) + kotlin.math.abs(down - center)
+            }
+        }
+
+        if (frameSharpness > bestSharpnessScore || bestAnchorY == null) {
+            bestSharpnessScore = frameSharpness
+            bestAnchorY = yCurrent.clone()
+            bestAnchorU = uCurrent.clone()
+            bestAnchorV = vCurrent.clone()
+        }
+
+        // 4. Measure scene luminance on first frame for adaptive duration
+        if (burstFramesReceived == 0) {
+            var lumaSum = 0L
+            val sampleStep = 16
+            for (i in 0 until width * height step sampleStep) {
+                lumaSum += yCurrent[i]
+            }
+            lastEstimatedLuma = lumaSum.toDouble() / ((width * height + sampleStep - 1) / sampleStep)
+            if (pendingCaptureMode.contains("NIGHT SIGHT") && lastEstimatedLuma > 45.0) {
+                targetBurstFrames = 3 // Well-lit scene: cap at 3 frames to avoid motion blur
+            }
         }
 
         burstFramesReceived++
 
         // Once full burst received, execute final Edge Flagship ISP
-        if (burstFramesReceived >= NIGHT_SIGHT_BURST_FRAMES) {
+        if (burstFramesReceived >= targetBurstFrames) {
             finalizeNightSightCapture()
         }
     }
@@ -497,6 +552,7 @@ class Camera2RawController(
 
     /**
      * Executes the Edge Flagship ISP on the accumulated high-SNR multi-frame photon data.
+     * Preserves pristine optical sharpness via Lucky Imaging anchor fusion and noise-cored edge pop.
      */
     private fun finalizeNightSightCapture() {
         if (!isCapturingNightSight.compareAndSet(true, false)) return
@@ -520,12 +576,20 @@ class Camera2RawController(
         val uAveraged = IntArray(uvW * uvH) { (uAcc[it] / frames).toInt().coerceIn(0, 255) }
         val vAveraged = IntArray(uvW * uvH) { (vAcc[it] / frames).toInt().coerceIn(0, 255) }
 
-        // Step 1: Precompute Adaptive GCam S-Curve Tone Mapping Table
-        val boostGain = 1.0 + (alpha / 40.0)
+        // Lucky Imaging: Use the sharpest anchor frame for raw detail, edge preservation & "Before" baseline
+        val anchorY = bestAnchorY ?: yAveraged
+        val anchorU = bestAnchorU ?: uAveraged
+        val anchorV = bestAnchorV ?: vAveraged
+
+        // Generate authentic underexposed sensor snapshot from the sharpest anchor frame
+        initialBeforeBytes = generateBeforeBaselineJpeg(anchorY, anchorU, anchorV, width, height, uvW)
+
+        // Step 1: Precompute Adaptive GCam S-Curve Tone Mapping Table with smooth highlight roll-off
+        val boostGain = 1.0 + (alpha / 45.0).coerceIn(0.2, 5.0)
         val toneMapLut = IntArray(256)
         for (i in 0..255) {
             val norm = (i / 255.0) * boostGain
-            val mapped = 255.0 * (norm / (1.0 + 0.38 * norm))
+            val mapped = 255.0 * (norm / (1.0 + 0.35 * norm))
             toneMapLut[i] = mapped.toInt().coerceIn(0, 255)
         }
 
@@ -549,7 +613,7 @@ class Camera2RawController(
             }
         }
 
-        // Step 3: Luminance Edge-Preserving Bilateral Denoising & Unsharp Mask Deblurring
+        // Step 3: Dual-Domain Edge Preservation & Detail Injection (+40% edge pop with noise coring)
         val afterPixels = IntArray(width * height)
 
         for (y in 0 until height) {
@@ -559,58 +623,59 @@ class Camera2RawController(
             val hasNeighborsY = (y in 1 until height - 1)
 
             for (x in 0 until width) {
-                val rawY = yAveraged[yRow + x]
-                val lumaMapped = toneMapLut[rawY]
+                val anchorLum = anchorY[yRow + x]
+                val avgLum = yAveraged[yRow + x]
 
-                // Bilateral edge-preserving spatial filter
-                val lumaDenoised: Double
-                val localBlur: Double
-                if (hasNeighborsY && x in 1 until width - 1) {
-                    val yUp = toneMapLut[yAveraged[(y - 1) * width + x]]
-                    val yDown = toneMapLut[yAveraged[(y + 1) * width + x]]
-                    val yLeft = toneMapLut[yAveraged[yRow + (x - 1)]]
-                    val yRight = toneMapLut[yAveraged[yRow + (x + 1)]]
-
-                    localBlur = (yUp + yDown + yLeft + yRight) / 4.0
-                    var weightSum = 1.0
-                    var accum = lumaMapped.toDouble()
-
-                    for (neighbor in listOf(yUp, yDown, yLeft, yRight)) {
-                        val diff = kotlin.math.abs(neighbor - lumaMapped)
-                        if (diff < 32) {
-                            val w = 1.0 - (diff / 32.0) * 0.5
-                            accum += neighbor * w
-                            weightSum += w
-                        }
-                    }
-                    lumaDenoised = accum / weightSum
+                // Temporal edge preservation: if anchor and average differ by > 20 levels (motion/shake), stick to anchor!
+                val baseLum = if (kotlin.math.abs(anchorLum - avgLum) > 20) {
+                    anchorLum
                 } else {
-                    lumaDenoised = lumaMapped.toDouble()
-                    localBlur = lumaMapped.toDouble()
+                    avgLum
                 }
 
-                // Step 4: Unsharp Mask Deblurring (reverses lens softness & restores crisp micro-textures)
-                val highFreqDetail = lumaDenoised - localBlur
-                val lumaSharpened = (lumaDenoised + 0.65 * highFreqDetail).toInt().coerceIn(0, 255)
+                val lumaMapped = toneMapLut[baseLum]
 
-                // Step 5: Read Cleaned Chroma
+                // Local 4-neighborhood blur of the sharp anchor frame to isolate high frequencies
+                val localBlur: Double
+                if (hasNeighborsY && x in 1 until width - 1) {
+                    val yUp = anchorY[(y - 1) * width + x]
+                    val yDown = anchorY[(y + 1) * width + x]
+                    val yLeft = anchorY[yRow + (x - 1)]
+                    val yRight = anchorY[yRow + (x + 1)]
+                    localBlur = (yUp + yDown + yLeft + yRight) / 4.0
+                } else {
+                    localBlur = anchorLum.toDouble()
+                }
+
+                // High frequency detail from the raw sensor anchor
+                val rawHighFreq = anchorLum.toDouble() - localBlur
+
+                // Noise coring: threshold small shot noise (< 3.0), amplify genuine edges & textures (>= 3.0)
+                val detailBoost = if (kotlin.math.abs(rawHighFreq) >= 3.0) {
+                    rawHighFreq * 1.40 // +40% edge pop on hair, eyes, fabric, contours
+                } else {
+                    rawHighFreq * 0.25 // suppress sensor floor noise
+                }
+
+                val lumaSharpened = (lumaMapped + detailBoost).toInt().coerceIn(0, 255)
+
+                // Read Cleaned Chroma with 1.25x saturation boost
                 val uvX = (x / 2).coerceIn(0, uvW - 1)
-                val u = cleanU[uvRow + uvX].takeIf { it > 0 } ?: uAveraged[uvRow + uvX]
-                val v = cleanV[uvRow + uvX].takeIf { it > 0 } ?: vAveraged[uvRow + uvX]
+                val uRaw = cleanU[uvRow + uvX].takeIf { it > 0 } ?: anchorU[uvRow + uvX]
+                val vRaw = cleanV[uvRow + uvX].takeIf { it > 0 } ?: anchorV[uvRow + uvX]
 
-                // Step 6: BT.601 YUV -> RGB Transformation
+                // 1.25x color saturation boost around neutral 128
+                val uBoost = (128 + ((uRaw - 128) * 1.25)).toInt().coerceIn(0, 255)
+                val vBoost = (128 + ((vRaw - 128) * 1.25)).toInt().coerceIn(0, 255)
+
+                // BT.601 YUV -> RGB Transformation
                 val c = lumaSharpened - 16
-                val d = u - 128
-                val e = v - 128
-                var r = ((298 * c + 409 * e + 128) shr 8).coerceIn(0, 255)
-                var g = ((298 * c - 100 * d - 208 * e + 128) shr 8).coerceIn(0, 255)
-                var b = ((298 * c + 516 * d + 128) shr 8).coerceIn(0, 255)
+                val d = uBoost - 128
+                val e = vBoost - 128
 
-                // Step 7: Color Science - Vibrancy & Gamut Saturation Boost (1.25x)
-                val gray = (299 * r + 587 * g + 114 * b) / 1000
-                r = (gray + 1.25 * (r - gray)).toInt().coerceIn(0, 255)
-                g = (gray + 1.25 * (g - gray)).toInt().coerceIn(0, 255)
-                b = (gray + 1.25 * (b - gray)).toInt().coerceIn(0, 255)
+                val r = ((298 * c + 409 * e + 128) shr 8).coerceIn(0, 255)
+                val g = ((298 * c - 100 * d - 208 * e + 128) shr 8).coerceIn(0, 255)
+                val b = ((298 * c + 516 * d + 128) shr 8).coerceIn(0, 255)
 
                 afterPixels[yRow + x] = (0xFF shl 24) or (r shl 16) or (g shl 8) or b
             }

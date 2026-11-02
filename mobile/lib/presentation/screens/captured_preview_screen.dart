@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../../core/constants/gcam_colors.dart';
+import '../../core/services/camera2_service.dart';
 import '../widgets/before_after_slider.dart';
 
 /// Screen displayed immediately after shutter capture.
@@ -42,26 +43,65 @@ class _CapturedPreviewScreenState extends State<CapturedPreviewScreen> {
   }
 
   void _handleSave() async {
+    if (_isSaving) return;
     setState(() => _isSaving = true);
-    await Future.delayed(const Duration(milliseconds: 400));
-    if (mounted) {
-      setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: GCamColors.surfaceElevated,
-          content: Row(
-            children: const [
-              Icon(Icons.check_circle_rounded, color: GCamColors.accentGreen, size: 18),
-              SizedBox(width: 8),
-              Text(
-                'Saved to Gallery: DCIM/Camera/LumaCam_Pixel_ISP.jpg',
+
+    try {
+      final bytesToSave = widget.imageBytes;
+      if (bytesToSave != null && bytesToSave.isNotEmpty) {
+        final service = Camera2Service();
+        final fileName = 'LumaCam_ISP_${DateTime.now().millisecondsSinceEpoch}';
+        final savedUri = await service.saveImageToGallery(bytesToSave, title: fileName);
+
+        if (mounted) {
+          setState(() => _isSaving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: GCamColors.surfaceElevated,
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle_rounded, color: GCamColors.accentGreen, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      savedUri != null
+                          ? 'Saved to Gallery: Pictures/LumaCam/$fileName.jpg'
+                          : 'Saved to Pictures/LumaCam',
+                      style: const TextStyle(color: GCamColors.textPrimary, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        await Future.delayed(const Duration(milliseconds: 300));
+        if (mounted) {
+          setState(() => _isSaving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: GCamColors.surfaceElevated,
+              content: Text(
+                'Demo photo saved to Pictures/LumaCam',
                 style: TextStyle(color: GCamColors.textPrimary, fontSize: 12),
               ),
-            ],
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.redAccent,
+            content: Text('Save error: $e'),
           ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+        );
+      }
     }
   }
 

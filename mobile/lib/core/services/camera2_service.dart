@@ -78,12 +78,17 @@ class Camera2Service {
   }
 
   /// Captures a sensor frame, runs Flagship ISP restoration, and returns result payload
-  Future<Map<String, dynamic>> captureImage({required double alpha, int quarterTurns = 0}) async {
+  Future<Map<String, dynamic>> captureImage({
+    required double alpha,
+    int quarterTurns = 0,
+    String mode = 'NIGHT SIGHT',
+  }) async {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android && _textureId != null) {
       try {
         final Map<dynamic, dynamic>? res = await _channel.invokeMethod('captureImage', {
           'alpha': alpha,
           'quarterTurns': quarterTurns,
+          'mode': mode,
         });
         if (res != null) {
           return {
@@ -118,6 +123,22 @@ class Camera2Service {
       'isRaw': true,
       'sensorOrientation': 90,
     };
+  }
+
+  /// Saves image bytes to Android MediaStore in Pictures/LumaCam
+  Future<String?> saveImageToGallery(Uint8List imageBytes, {String? title}) async {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        final String? uri = await _channel.invokeMethod('saveImageToGallery', {
+          'imageBytes': imageBytes,
+          'title': title ?? 'LumaCam_${DateTime.now().millisecondsSinceEpoch}',
+        });
+        return uri;
+      } catch (e) {
+        debugPrint('[Camera2Service] saveImageToGallery error: $e');
+      }
+    }
+    return null;
   }
 
   /// Disposes camera session and releases hardware surfaces

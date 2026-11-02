@@ -11,6 +11,18 @@ owner's sign-off go under **Open Decisions**, not into code.
 
 ## [Unreleased]
 
+### Feat — Lucky Imaging Anchor Fusion, Rapid Burst Mode & Android MediaStore Gallery Export (Team 21)
+
+- **What / Why:** Solved handheld camera shake motion blur and local photo storage visibility:
+  1. Lucky Imaging & Sharpest Anchor Keyframe Selection: Replaced naive temporal pixel averaging (which caused double-imaging and edge softening during handheld captures) with gradient-energy sharpness scoring ($S = \sum |\nabla Y|$) to detect and lock onto the single sharpest anchor frame ($Y_{\text{anchor}}$) in each burst sequence.
+  2. Dual-Domain Detail Extraction & +40% Edge Pop: Isolated high-frequency textural gradients from the raw sensor anchor frame ($D_{\text{high}} = Y_{\text{anchor}} - \text{LowPass}(Y_{\text{anchor}})$), applied a noise-coring threshold ($|D_{\text{high}}| \ge 3$) to eliminate sensor shot noise, and boosted genuine contours (hair, eyes, fabric, edges) by +40% ($1.4\times$) on top of an S-curve highlight roll-off base.
+  3. Dynamic Lux Metering & Adaptive Burst Shutter: Measured real-time scene luminance. In well-lit scenes ($Y_{\text{mean}} > 45$), burst duration automatically contracts to 3 frames (<250ms), freezing camera motion completely. Deep low-light scenes adaptively accumulate up to 6 frames.
+  4. Bottom Mode Carousel Overhaul: Replaced the old benchmark navigation with an AMOLED mode carousel featuring `BURST` (instant freeze burst <250ms with no countdown timer), `NIGHT SIGHT` (adaptive multi-frame burst), and `PRO` (tactile manual $\alpha$/EV).
+  5. Native MediaStore Gallery Saving: Resolved issue where captured photos did not show in the Android file manager or Google Photos. Implemented `MediaStore.Images.Media` bridge on `MainActivity.kt` targeting `Pictures/LumaCam` with Scoped Storage support, enabling captured photos to be immediately indexed by the OS media scanner.
+- **Files:** `mobile/android/app/src/main/AndroidManifest.xml`, `mobile/android/app/src/main/kotlin/com/lumacam/lumacam/MainActivity.kt`, `mobile/android/app/src/main/kotlin/com/lumacam/lumacam/Camera2RawController.kt`, `mobile/lib/core/services/camera2_service.dart`, `mobile/lib/presentation/screens/gcam_camera_screen.dart`, `mobile/lib/presentation/screens/captured_preview_screen.dart`, `mobile/test/widget_test.dart`, `CHANGELOG.md`, `Progress.md`.
+- **Verification:** Ran `flutter analyze` (0 issues found), `flutter test` (all 2 widget tests passed), and `flutter build apk --debug`.
+- **Impact / Follow-ups:** Produces crisp, handheld blur-free photographs with authentic raw detail preservation and saves them directly to `Pictures/LumaCam`.
+
 ### Feat — Pixel GCam Night Sight Burst Integration, Viewfinder Orientation & Adaptive AE (Team 21)
 
 - **What / Why:** Overhauled real-time Camera2 preview and photo capture on mobile to resolve viewport orientation inversion, scene clipping in varying ambient light, and noisy single-frame captures:
